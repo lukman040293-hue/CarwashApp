@@ -6,44 +6,35 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>L Carwash</title>
   <style>
-    /* Memastikan aplikasi memenuhi layar penuh dan mematikan fitur tarik-refresh */
-    html, body, #root {
+    /* Dasar aplikasi: Memenuhi layar tanpa scroll di level paling luar */
+    html, body {
       height: 100%;
       margin: 0;
       padding: 0;
       width: 100%;
       background-color: #f8fafc;
-      overflow: hidden; /* Mengunci scroll utama agar tidak terjadi pull-to-refresh */
-      
-      /* Kunci CSS: Mematikan tarikan refresh browser di Android/iOS */
-      overscroll-behavior-y: none; 
-      overscroll-behavior: none;
-      
-      /* Mematikan aksi sentuh default pada level root agar tidak men-trigger sistem browser */
-      touch-action: none;
+      overflow: hidden; /* Mencegah pull-to-refresh browser */
+      overscroll-behavior-y: none;
+      position: fixed; /* Mengunci posisi body agar tidak bergeser */
     }
 
-    /* Pengaturan agar aplikasi terasa seperti aplikasi native */
-    body {
-      -webkit-overflow-scrolling: touch;
-      position: fixed; 
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      user-select: none; /* Mencegah seleksi teks yang tidak disengaja saat scroll */
-      -webkit-user-select: none;
-    }
-
-    /* Memastikan area konten tetap bisa di-scroll secara mandiri */
-    /* Kita mengaktifkan kembali scroll hanya untuk arah vertikal di dalam aplikasi */
-    #root > div {
-      touch-action: pan-y;
+    #root {
       height: 100%;
-      overflow-y: auto;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
     }
 
-    /* Sembunyikan scrollbar tapi tetap bisa digeser */
+    /* Pastikan kontainer utama di dalam React bisa scroll */
+    /* Kita mengaktifkan kembali scroll di sini */
+    .scroll-container {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch; /* Scroll halus di iOS */
+      touch-action: pan-y; /* Hanya izinkan geser atas-bawah */
+    }
+
+    /* Sembunyikan scrollbar agar terlihat bersih seperti aplikasi asli */
     .hide-scrollbar::-webkit-scrollbar {
       display: none;
     }
@@ -56,37 +47,27 @@
 <body>
   <div id="root"></div>
   
-  <!-- Script Pengunci Refresh Super Kuat -->
+  <!-- Script Pengunci Refresh yang lebih cerdas -->
   <script>
-    // 1. Mencegah tarikan pada dokumen secara global
-    document.addEventListener('touchmove', function(e) {
-      if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
-        // Cek apakah elemen yang di-scroll adalah bagian dari konten yang boleh scroll
-        const scrollableElement = document.querySelector('.overflow-y-auto') || document.querySelector('#root > div');
-        
-        if (scrollableElement) {
-          const isAtTop = scrollableElement.scrollTop === 0;
-          const isScrollingUp = e.touches[0].pageY > startY;
-
-          // Jika di posisi paling atas dan mencoba tarik ke bawah, kunci!
-          if (isAtTop && isScrollingUp) {
-            if (e.cancelable) e.preventDefault();
-          }
-        } else {
-          if (e.cancelable) e.preventDefault();
-        }
-      }
-    }, { passive: false });
-
     let startY = 0;
+
+    // Menangkap titik awal sentuhan
     document.addEventListener('touchstart', function(e) {
       startY = e.touches[0].pageY;
     }, { passive: true });
 
-    // 2. Mencegah "Bounce effect" pada iOS dan Android WebView tertentu
-    window.addEventListener('scroll', function(e) {
-      if (window.scrollY > 0) window.scrollTo(0, 0);
-    });
+    // Mencegah tarikan refresh hanya jika berada di paling atas
+    document.addEventListener('touchmove', function(e) {
+      const scrollTarget = document.querySelector('.overflow-y-auto') || document.body;
+      const scrollTop = scrollTarget.scrollTop;
+      const moveY = e.touches[0].pageY;
+      const isDraggingDown = moveY > startY;
+
+      // Jika user tarik ke bawah saat posisi sudah paling atas, blokir refresh
+      if (scrollTop <= 0 && isDraggingDown) {
+        if (e.cancelable) e.preventDefault();
+      }
+    }, { passive: false });
   </script>
 
   <!-- Library Tailwind CSS untuk desain -->
