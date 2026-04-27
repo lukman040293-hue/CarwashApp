@@ -3,28 +3,45 @@
 <head>
   <meta charset="UTF-8" />
   <!-- Pengaturan agar tampilan pas di layar HP dan tidak bisa di-zoom manual -->
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>L Carwash</title>
   <style>
-    /* Memastikan aplikasi memenuhi layar penuh */
+    /* Memastikan aplikasi memenuhi layar penuh dan mematikan fitur tarik-refresh */
     html, body, #root {
       height: 100%;
       margin: 0;
       padding: 0;
       width: 100%;
       background-color: #f8fafc;
-      overflow: hidden; /* Mencegah double scroll pada level body */
+      overflow: hidden; /* Mengunci scroll utama agar tidak terjadi pull-to-refresh */
+      
+      /* Kunci utama: Mematikan tarikan refresh browser di Android/iOS */
+      overscroll-behavior-y: none; 
+      overscroll-behavior: none;
     }
 
     /* Pengaturan scroll halus untuk perangkat sentuh */
     body {
       -webkit-overflow-scrolling: touch;
-      overscroll-behavior-y: contain; /* Mencegah tarikan refresh browser yang mengganggu */
+      position: fixed; /* Mencegah pergeseran seluruh body saat mencapai batas scroll */
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
     }
 
     /* Sembunyikan scrollbar tapi tetap bisa digeser (untuk tampilan minimalis) */
     .hide-scrollbar::-webkit-scrollbar {
       display: none;
+    }
+    .hide-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    /* Memastikan area input tidak terhalang bar navigasi sistem */
+    :root {
+      --safe-area-inset-bottom: env(safe-area-inset-bottom);
     }
   </style>
 </head>
