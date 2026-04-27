@@ -110,10 +110,9 @@ export default function App() {
         </defs>
       </svg>
 
-      {/* HEADER SECTION (Menyatu dengan batas atas layar) */}
-      <div className="shrink-0 z-10 w-full bg-slate-50">
-        <div className="bg-[#24429A] rounded-b-[2.5rem] px-6 pt-10 pb-8 flex flex-col justify-center shadow-xl shadow-[#24429A]/10 text-white relative overflow-hidden">
-          {/* Aksen Dekoratif */}
+      {/* HEADER SECTION - Menempel penuh ke tepi atas */}
+      <div className="shrink-0 z-10 w-full">
+        <div className="bg-[#24429A] rounded-b-[2.5rem] px-6 pt-12 pb-8 flex flex-col justify-center shadow-xl shadow-[#24429A]/10 text-white relative overflow-hidden">
           <div className="absolute -right-8 -top-8 w-40 h-40 bg-white/5 rounded-full blur-2xl"></div>
           <div className="absolute -left-10 -bottom-10 w-32 h-32 bg-blue-500/20 rounded-full blur-xl"></div>
           
@@ -130,7 +129,7 @@ export default function App() {
       </div>
 
       {/* CONTENT AREA */}
-      <div className="flex-1 overflow-y-auto hide-scrollbar pb-40 px-5 pt-6 w-full relative">
+      <div className="flex-1 overflow-y-auto hide-scrollbar pb-32 px-5 pt-6 w-full relative">
         {activeTab === 'kasir' && <KasirView services={SERVICES} customServices={customServices} setCustomServices={setCustomServices} setOrders={setOrders} formatRp={formatRp} setActiveTab={setActiveTab} setActiveNota={setActiveNota} showAlert={showAlert} />}
         {activeTab === 'kalender' && <KalenderView orders={orders} formatRp={formatRp} setActiveNota={setActiveNota} />}
         {activeTab === 'riwayat' && <RiwayatView orders={orders} setOrders={setOrders} formatRp={formatRp} setActiveNota={setActiveNota} showAlert={showAlert} showConfirm={showConfirm} />}
@@ -232,7 +231,7 @@ function KasirView({ services, customServices, setCustomServices, setOrders, for
   return (
     <div className="animate-fadeIn space-y-6">
       
-      {/* SECTION FORM KENDARAAN LEBIH PROFESIONAL */}
+      {/* SECTION FORM KENDARAAN */}
       <div>
         <h2 className="font-black text-lg text-slate-800 flex items-center gap-2.5 mb-4 pl-1">
           <div className="p-2 bg-blue-100 rounded-xl text-blue-600"><Car size={20}/></div>
@@ -301,11 +300,11 @@ function KasirView({ services, customServices, setCustomServices, setOrders, for
 
         {/* CUSTOM LAYANAN */}
         {!showCustomForm ? (
-          <button onClick={() => setShowCustomForm(true)} className="w-full py-5 border-2 border-dashed border-slate-300 rounded-[2rem] text-slate-400 text-xs font-bold flex items-center justify-center gap-2 bg-white hover:bg-slate-50 hover:text-slate-500 hover:border-slate-400 transition-colors active:bg-slate-100 mb-10">
+          <button onClick={() => setShowCustomForm(true)} className="w-full py-5 border-2 border-dashed border-slate-300 rounded-[2rem] text-slate-400 text-xs font-bold flex items-center justify-center gap-2 bg-white hover:bg-slate-50 hover:text-slate-500 hover:border-slate-400 transition-colors active:bg-slate-100">
             <Plus size={18}/> Tambah Layanan Khusus
           </button>
         ) : (
-          <div className="bg-blue-50 p-5 rounded-[2rem] border border-blue-200 space-y-4 mb-10 shadow-inner">
+          <div className="bg-blue-50 p-5 rounded-[2rem] border border-blue-200 space-y-4 shadow-inner">
              <div className="flex justify-between items-center px-1">
                 <span className="text-sm font-black text-blue-800">Layanan Baru</span>
                 <button onClick={() => setShowCustomForm(false)} className="bg-blue-100 p-1.5 rounded-full text-blue-500"><X size={18}/></button>
@@ -323,13 +322,13 @@ function KasirView({ services, customServices, setCustomServices, setOrders, for
         )}
       </div>
 
-      {/* TABS BAWAH: Total Harga & Tombol Simpan */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white p-5 pb-[110px] shadow-[0_-15px_40px_rgba(0,0,0,0.08)] rounded-t-[3rem] flex justify-between items-center z-40 border-t border-slate-100 max-w-lg mx-auto">
-        <div className="pl-2">
+      {/* DISATUKAN DI BAWAH (TIDAK MENGAMBANG LAGI) */}
+      <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 flex justify-between items-center w-full mt-6 mb-8">
+        <div className="flex-1 min-w-0 pr-4">
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Total Tagihan</p>
-          <p className="text-2xl font-black text-blue-600 leading-none tracking-tight">{formatRp(currentTotal)}</p>
+          <p className="text-2xl font-black text-blue-600 leading-none tracking-tight truncate">{formatRp(currentTotal)}</p>
         </div>
-        <button onClick={handleSimpan} className="bg-blue-600 hover:bg-blue-700 text-white font-black px-8 py-4 rounded-2xl shadow-xl shadow-blue-200 active:scale-95 transition-transform flex items-center gap-2">
+        <button onClick={handleSimpan} className="shrink-0 bg-blue-600 hover:bg-blue-700 text-white font-black px-8 py-4 rounded-2xl shadow-xl shadow-blue-200 active:scale-95 transition-transform flex items-center justify-center gap-2">
           Simpan <CheckCircle2 size={20}/>
         </button>
       </div>
@@ -424,11 +423,11 @@ function RiwayatView({ orders, setOrders, formatRp, setActiveNota, showConfirm }
               </div>
 
               <div className="flex justify-between items-center pl-3">
-                <div>
+                <div className="flex-1 min-w-0 pr-4">
                   <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-1">Total Tagihan</p>
-                  <p className="font-black text-blue-600 text-xl">{formatRp(order.total)}</p>
+                  <p className="font-black text-blue-600 text-xl truncate">{formatRp(order.total)}</p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 shrink-0">
                   <button onClick={() => setActiveNota(order)} className="p-4 bg-slate-50 hover:bg-slate-100 text-slate-400 rounded-2xl transition-colors"><Printer size={20}/></button>
                   {order.status !== 'Lunas' && (
                     <button onClick={() => showConfirm(`Konfirmasi Lunas untuk ${formatRp(order.total)}?`, () => setOrders(prev => prev.map(o => o.id === order.id ? {...o, status: 'Lunas'} : o)))} className="bg-green-500 hover:bg-green-600 text-white text-xs font-black px-6 py-4 rounded-2xl shadow-xl shadow-green-200 active:scale-95 transition-transform">LUNASI</button>
@@ -454,7 +453,7 @@ function LaporanView({ orders, formatRp }) {
         <Wallet className="absolute -right-6 -top-6 w-40 h-40 text-white/5 rotate-12" />
         <div className="relative z-10">
           <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em] mb-2">Total Pendapatan</p>
-          <h3 className="text-4xl font-black tracking-tighter">{formatRp(total)}</h3>
+          <h3 className="text-4xl font-black tracking-tighter truncate">{formatRp(total)}</h3>
           <p className="text-xs text-blue-400 font-bold mt-4">Hanya menghitung transaksi lunas</p>
         </div>
       </div>
@@ -506,7 +505,7 @@ function NotaModal({ order, formatRp, onClose, showAlert }) {
 
           <div className="flex justify-between items-center text-2xl font-black pt-2">
             <span className="text-slate-800 tracking-tighter">TOTAL</span>
-            <span className="text-blue-600">{formatRp(order.total)}</span>
+            <span className="text-blue-600 truncate max-w-[60%] text-right">{formatRp(order.total)}</span>
           </div>
         </div>
         
