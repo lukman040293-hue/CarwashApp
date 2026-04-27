@@ -6,16 +6,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>L Carwash</title>
   <style>
-    /* Dasar aplikasi: Memenuhi layar tanpa scroll di level paling luar */
+    /* Mengunci total layar paling luar */
     html, body {
       height: 100%;
+      width: 100%;
       margin: 0;
       padding: 0;
-      width: 100%;
+      overflow: hidden; /* Mencegah scroll di level browser */
       background-color: #f8fafc;
-      overflow: hidden; /* Mencegah pull-to-refresh browser */
-      overscroll-behavior-y: none;
-      position: fixed; /* Mengunci posisi body agar tidak bergeser */
+      position: fixed; /* Mencegah tarikan layar (pull-to-refresh) */
+      overscroll-behavior: none;
+      -webkit-user-select: none;
+      user-select: none;
     }
 
     #root {
@@ -23,54 +25,55 @@
       width: 100%;
       display: flex;
       flex-direction: column;
+      overflow: hidden;
     }
 
-    /* Pastikan kontainer utama di dalam React bisa scroll */
-    /* Kita mengaktifkan kembali scroll di sini */
-    .scroll-container {
-      flex: 1;
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch; /* Scroll halus di iOS */
-      touch-action: pan-y; /* Hanya izinkan geser atas-bawah */
+    /* Area yang boleh di-scroll (dipicu oleh class tailwind flex-1 overflow-y-auto di App.js) */
+    .overflow-y-auto {
+      -webkit-overflow-scrolling: touch !important;
+      overscroll-behavior: contain !important;
+      touch-action: pan-y !important;
     }
 
-    /* Sembunyikan scrollbar agar terlihat bersih seperti aplikasi asli */
-    .hide-scrollbar::-webkit-scrollbar {
-      display: none;
-    }
-    .hide-scrollbar {
-      -ms-overflow-style: none;
-      scrollbar-width: none;
+    /* Hilangkan highlight biru saat klik di Android */
+    * {
+      -webkit-tap-highlight-color: transparent;
     }
   </style>
 </head>
 <body>
   <div id="root"></div>
   
-  <!-- Script Pengunci Refresh yang lebih cerdas -->
+  <!-- Script Anti-Refresh Super Kuat -->
   <script>
-    let startY = 0;
+    (function() {
+      let startY = 0;
 
-    // Menangkap titik awal sentuhan
-    document.addEventListener('touchstart', function(e) {
-      startY = e.touches[0].pageY;
-    }, { passive: true });
+      // Menangkap titik awal sentuhan
+      document.addEventListener('touchstart', function(e) {
+        startY = e.touches[0].pageY;
+      }, { passive: true });
 
-    // Mencegah tarikan refresh hanya jika berada di paling atas
-    document.addEventListener('touchmove', function(e) {
-      const scrollTarget = document.querySelector('.overflow-y-auto') || document.body;
-      const scrollTop = scrollTarget.scrollTop;
-      const moveY = e.touches[0].pageY;
-      const isDraggingDown = moveY > startY;
+      // Mencegah tarikan refresh hanya jika berada di paling atas
+      document.addEventListener('touchmove', function(e) {
+        // Cari elemen yang sedang di-scroll (biasanya div dengan class overflow-y-auto)
+        const scrollable = document.querySelector('.overflow-y-auto') || document.body;
+        const scrollTop = scrollable.scrollTop;
+        const moveY = e.touches[0].pageY;
+        const isDraggingDown = moveY > startY;
 
-      // Jika user tarik ke bawah saat posisi sudah paling atas, blokir refresh
-      if (scrollTop <= 0 && isDraggingDown) {
-        if (e.cancelable) e.preventDefault();
-      }
-    }, { passive: false });
+        // JIKA posisi sudah di paling atas DAN user mencoba tarik ke bawah
+        if (scrollTop <= 0 && isDraggingDown) {
+          // BLOKIR aksi refresh browser
+          if (e.cancelable) {
+            e.preventDefault();
+          }
+        }
+      }, { passive: false }); // Penting: passive false agar preventDefault bekerja
+    })();
   </script>
 
-  <!-- Library Tailwind CSS untuk desain -->
+  <!-- Library Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
 </body>
 </html>
