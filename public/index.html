@@ -2,22 +2,24 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <!-- Pengaturan agar tampilan pas di layar HP dan tidak bisa di-zoom manual -->
+  <!-- Pengaturan viewport untuk mencegah zoom dan memastikan pas di layar HP -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>L Carwash</title>
   <style>
-    /* Mengunci total layar paling luar */
+    /* Kunci total area terluar agar tidak bisa ditarik sama sekali */
     html, body {
       height: 100%;
       width: 100%;
       margin: 0;
       padding: 0;
-      overflow: hidden; /* Mencegah scroll di level browser */
+      overflow: hidden;
       background-color: #f8fafc;
-      position: fixed; /* Mencegah tarikan layar (pull-to-refresh) */
+      position: fixed;
+      /* Mematikan fitur overscroll di level browser */
+      overscroll-behavior-y: none;
       overscroll-behavior: none;
-      -webkit-user-select: none;
-      user-select: none;
+      /* Mematikan aksi sentuh default browser */
+      touch-action: none;
     }
 
     #root {
@@ -28,14 +30,15 @@
       overflow: hidden;
     }
 
-    /* Area yang boleh di-scroll (dipicu oleh class tailwind flex-1 overflow-y-auto di App.js) */
+    /* Mengaktifkan kembali scroll HANYA pada area konten aplikasi */
+    /* Kita memberikan izin pan-y (geser atas bawah) secara spesifik */
     .overflow-y-auto {
       -webkit-overflow-scrolling: touch !important;
       overscroll-behavior: contain !important;
       touch-action: pan-y !important;
     }
 
-    /* Hilangkan highlight biru saat klik di Android */
+    /* Menghilangkan highlight biru saat elemen diklik di Android */
     * {
       -webkit-tap-highlight-color: transparent;
     }
@@ -44,36 +47,45 @@
 <body>
   <div id="root"></div>
   
-  <!-- Script Anti-Refresh Super Kuat -->
   <script>
     (function() {
-      let startY = 0;
+      let lastY = 0;
 
-      // Menangkap titik awal sentuhan
+      // Mendeteksi awal sentuhan
       document.addEventListener('touchstart', function(e) {
-        startY = e.touches[0].pageY;
-      }, { passive: true });
+        lastY = e.touches[0].pageY;
+      }, { passive: false });
 
-      // Mencegah tarikan refresh hanya jika berada di paling atas
+      // Kontrol penuh pada pergerakan jari
       document.addEventListener('touchmove', function(e) {
-        // Cari elemen yang sedang di-scroll (biasanya div dengan class overflow-y-auto)
-        const scrollable = document.querySelector('.overflow-y-auto') || document.body;
-        const scrollTop = scrollable.scrollTop;
-        const moveY = e.touches[0].pageY;
-        const isDraggingDown = moveY > startY;
+        // Cari elemen yang sedang aktif di-scroll di dalam React (App.js)
+        const scrollable = document.querySelector('.overflow-y-auto');
+        
+        if (scrollable) {
+          const scrollTop = scrollable.scrollTop;
+          const currentY = e.touches[0].pageY;
+          const isDraggingDown = currentY > lastY;
 
-        // JIKA posisi sudah di paling atas DAN user mencoba tarik ke bawah
-        if (scrollTop <= 0 && isDraggingDown) {
-          // BLOKIR aksi refresh browser
-          if (e.cancelable) {
-            e.preventDefault();
+          // JIKA di posisi paling atas dan ditarik ke bawah -> BLOKIR TOTAL
+          if (scrollTop <= 0 && isDraggingDown) {
+            if (e.cancelable) e.preventDefault();
           }
+        } else {
+          // Jika tidak ada area scrollable, jangan izinkan tarikan sama sekali
+          if (e.cancelable) e.preventDefault();
         }
-      }, { passive: false }); // Penting: passive false agar preventDefault bekerja
+        
+        lastY = e.touches[0].pageY;
+      }, { passive: false }); // Penting: passive false agar preventDefault ditaati browser
+
+      // Tambahan: Pastikan layar tidak mental saat mencapai batas (rubber banding)
+      document.addEventListener('touchend', function(e) {
+        lastY = 0;
+      }, { passive: false });
     })();
   </script>
 
-  <!-- Library Tailwind CSS -->
+  <!-- Memanggil Tailwind CSS untuk desain -->
   <script src="https://cdn.tailwindcss.com"></script>
 </body>
 </html>
