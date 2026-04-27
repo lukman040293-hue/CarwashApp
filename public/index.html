@@ -2,19 +2,22 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <!-- Pengaturan viewport untuk mengunci zoom dan rasio layar -->
+  <!-- viewport-fit=cover adalah kunci utama untuk membuat background tembus ke ujung layar -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  
+  <!-- Mengubah warna status bar atas HP menjadi senada dengan header aplikasi -->
+  <meta name="theme-color" content="#24429A" />
+  
   <title>L Carwash</title>
   <style>
-    /* Mengunci background agar tidak bisa bergerak/ditarik sama sekali */
+    /* CSS Bersih untuk performa maksimal */
     html, body {
       margin: 0;
       padding: 0;
       width: 100%;
       height: 100%;
-      overflow: hidden !important; /* Paksa body untuk tidak bisa scroll */
       background-color: #f8fafc;
-      overscroll-behavior: none !important;
+      overscroll-behavior-y: contain;
       -webkit-tap-highlight-color: transparent;
     }
 
@@ -23,50 +26,19 @@
       height: 100%;
       display: flex;
       flex-direction: column;
+      overflow: hidden;
+      
+      /* MEMBERIKAN JARAK AMAN (SAFE AREA) */
+      /* Agar background tembus sampai ujung, tapi teks/tombol tidak tertimpa navigasi HP */
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: env(safe-area-inset-bottom);
+      padding-left: env(safe-area-inset-left);
+      padding-right: env(safe-area-inset-right);
     }
   </style>
 </head>
 <body>
   <div id="root"></div>
-  
-  <!-- Script "Penjaga Layar" Khusus WebView Android -->
-  <script>
-    let startY = 0;
-
-    // 1. Teknik 1px: Jangan biarkan layar menyentuh ujung paling atas (posisi 0)
-    document.addEventListener('touchstart', function(e) {
-      startY = e.touches[0].clientY;
-      // Cari elemen yang sedang di-scroll (menggunakan class bawaan Tailwind kita)
-      const scrollable = e.target.closest('.overflow-y-auto');
-      
-      if (scrollable) {
-        if (scrollable.scrollTop === 0) {
-          scrollable.scrollTop = 1; // Paksa turun 1 piksel agar refresh tidak aktif
-        } else if (scrollable.scrollTop + scrollable.clientHeight === scrollable.scrollHeight) {
-          scrollable.scrollTop -= 1; // Paksa naik 1 piksel jika mentok bawah
-        }
-      }
-    }, { passive: true });
-
-    // 2. Blokir tarikan paksa ke bawah secara agresif
-    document.addEventListener('touchmove', function(e) {
-      const scrollable = e.target.closest('.overflow-y-auto');
-      const currentY = e.touches[0].clientY;
-      const isPullingDown = currentY > startY;
-
-      if (!scrollable) {
-        // Jika user menarik area yang tidak bisa di-scroll (seperti header/navigasi), blokir total
-        if (e.cancelable) e.preventDefault();
-      } else {
-        // Jika user menarik ke bawah saat posisi masih di area atas, blokir refresh
-        if (scrollable.scrollTop <= 1 && isPullingDown) {
-          if (e.cancelable) e.preventDefault();
-        }
-      }
-    }, { passive: false });
-  </script>
-
-  <!-- Memanggil Tailwind CSS untuk desain responsif -->
   <script src="https://cdn.tailwindcss.com"></script>
 </body>
 </html>
