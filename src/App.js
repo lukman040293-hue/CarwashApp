@@ -27,7 +27,7 @@ import {
 // --- DATA MASTER LAYANAN ---
 const SERVICES = [
   { id: 'w1', name: 'Basic Wash', category: 'Carwash', price: 150000, icon: <Droplets size={32} /> },
-  { id: 'w2', name: 'Super Premium Wash', category: 'Carwash', price: { Kecil: 300000, Besar: 315000 }, icon: <Sparkles size={32} />, recommended: true },
+  { id: 'w2', name: 'Super Premium Wash', category: 'Carwash', price: 300000, icon: <Sparkles size={32} />, recommended: true }, // Hanya mobil kecil (harga fixed)
   { id: 'w3', name: 'Premium Wash', category: 'Carwash', price: 200000, icon: <Wrench size={32} /> },
   { id: 'd1', name: 'Wash(Cuci) Engine', category: 'Engine', price: { Kecil: 125000, Besar: 145000 }, icon: <Car size={32} /> },
   { id: 'd2', name: 'Detailing Engine', category: 'Engine', price: 650000, icon: <Sun size={32} /> },
@@ -231,7 +231,7 @@ function KasirView({ services, customServices, setCustomServices, setOrders, for
   return (
     <div className="animate-fadeIn space-y-6">
       
-      {/* SECTION FORM KENDARAAN */}
+      {/* SECTION FORM KENDARAAN (Satu Baris Satu Isian) */}
       <div>
         <h2 className="font-black text-lg text-slate-800 flex items-center gap-2.5 mb-4 pl-1">
           <div className="p-2 bg-blue-100 rounded-xl text-blue-600"><Car size={20}/></div>
@@ -239,54 +239,61 @@ function KasirView({ services, customServices, setCustomServices, setOrders, for
         </h2>
         
         <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 space-y-5">
-          {/* Row 1: Tanggal & Jam */}
-          <div className="grid grid-cols-2 gap-4 pb-5 border-b border-slate-50">
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5"><Calendar size={12}/> Tanggal</label>
-              <input type="date" value={orderDate} onChange={e => setOrderDate(e.target.value)} className="w-full bg-slate-50 border border-slate-100 rounded-[1.25rem] p-4 text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-slate-700"/>
-            </div>
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5"><Clock size={12}/> Jam</label>
-              <input type="time" value={orderTime} onChange={e => setOrderTime(e.target.value)} className="w-full bg-slate-50 border border-slate-100 rounded-[1.25rem] p-4 text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-slate-700"/>
-            </div>
-          </div>
-
-          {/* Row 2: Plat & Tipe */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Plat Nomor</label>
-              <input type="text" placeholder="B 1234 XYZ" value={plate} onChange={e => setPlate(e.target.value)} className="w-full bg-slate-50 border border-slate-100 rounded-[1.25rem] p-4 text-sm font-black uppercase outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all placeholder:text-slate-300 placeholder:font-medium"/>
-            </div>
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Tipe Mobil</label>
-              <input type="text" placeholder="Pajero Sport" value={carType} onChange={e => setCarType(e.target.value)} className="w-full bg-slate-50 border border-slate-100 rounded-[1.25rem] p-4 text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all placeholder:text-slate-300 placeholder:font-medium"/>
-            </div>
-          </div>
-
-          {/* Row 3: Nama Pemilik */}
+          {/* Tanggal */}
           <div className="space-y-2">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Nama Pemilik</label>
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5 pl-1"><Calendar size={12}/> Tanggal</label>
+            <input type="date" value={orderDate} onChange={e => setOrderDate(e.target.value)} className="w-full bg-slate-50 border border-slate-100 rounded-[1.25rem] p-4 text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-slate-700"/>
+          </div>
+
+          {/* Jam */}
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5 pl-1"><Clock size={12}/> Jam</label>
+            <input type="time" value={orderTime} onChange={e => setOrderTime(e.target.value)} className="w-full bg-slate-50 border border-slate-100 rounded-[1.25rem] p-4 text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-slate-700"/>
+          </div>
+
+          {/* Nama Pemilik */}
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1 flex items-center gap-1.5"><User size={12}/> Nama Pemilik</label>
             <input type="text" placeholder="Masukkan nama pelanggan..." value={customerName} onChange={e => setCustomerName(e.target.value)} className="w-full bg-slate-50 border border-slate-100 rounded-[1.25rem] p-4 text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all placeholder:text-slate-300 placeholder:font-medium"/>
+          </div>
+
+          {/* Tipe Mobil */}
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Tipe Mobil</label>
+            <input type="text" placeholder="Contoh: Pajero Sport, Avanza" value={carType} onChange={e => setCarType(e.target.value)} className="w-full bg-slate-50 border border-slate-100 rounded-[1.25rem] p-4 text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all placeholder:text-slate-300 placeholder:font-medium"/>
+          </div>
+
+          {/* Plat Nomor */}
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Plat Nomor</label>
+            <input type="text" placeholder="B 1234 XYZ" value={plate} onChange={e => setPlate(e.target.value)} className="w-full bg-slate-50 border border-slate-100 rounded-[1.25rem] p-4 text-sm font-black uppercase outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all placeholder:text-slate-300 placeholder:font-medium"/>
           </div>
         </div>
       </div>
 
-      {/* SECTION DAFTAR LAYANAN */}
+      {/* SECTION DAFTAR LAYANAN (1 Layar HP 1 Kolom Penuh) */}
       <div className="space-y-6 pt-4">
         {Object.keys(groupedServices).map(cat => (
-          <div key={cat} className="space-y-3">
+          <div key={cat} className="space-y-4">
             <h3 className="font-black text-xs text-slate-400 uppercase tracking-[0.2em] ml-2">{cat}</h3>
-            <div className="grid grid-cols-2 gap-3">
+            {/* grid-cols-1 untuk tampilan penuh lebar dari atas ke bawah */}
+            <div className="grid grid-cols-1 gap-4">
               {groupedServices[cat].map(item => {
                 const isSelected = selectedItems.find(i => i.id === item.id);
                 return (
-                  <div key={item.id} onClick={() => toggleItem(item)} className={`p-5 rounded-[2rem] border-2 transition-all flex flex-col items-center text-center relative cursor-pointer active:scale-[0.98] ${isSelected ? 'border-blue-500 bg-blue-50 shadow-md' : 'bg-white border-slate-100 shadow-sm hover:border-slate-200'}`}>
-                    {isSelected && <div className="absolute top-3 right-3 bg-blue-600 text-white rounded-full p-0.5 shadow-sm"><CheckCircle2 size={16}/></div>}
-                    <div className="mb-3 icon-yellow-grad">{item.category === 'Layanan Custom' ? <Wrench size={32}/> : item.icon}</div>
-                    <p className="text-[12px] font-bold leading-tight mb-1 text-slate-800">{item.name}</p>
-                    <p className="text-sm font-black text-blue-600">{formatRp(getPrice(item, carSize))}</p>
+                  <div key={item.id} onClick={() => toggleItem(item)} className={`p-6 rounded-[2rem] border-2 transition-all flex flex-col items-center text-center relative cursor-pointer active:scale-[0.98] ${isSelected ? 'border-blue-500 bg-blue-50 shadow-md' : 'bg-white border-slate-100 shadow-sm hover:border-slate-200'}`}>
+                    {isSelected && <div className="absolute top-4 right-4 bg-blue-600 text-white rounded-full p-1 shadow-sm"><CheckCircle2 size={20}/></div>}
+                    
+                    {/* Ikon diperbesar */}
+                    <div className="mb-4 icon-yellow-grad scale-125">{item.category === 'Layanan Custom' ? <Wrench size={32}/> : item.icon}</div>
+                    
+                    {/* Teks diperbesar */}
+                    <p className="text-sm font-bold leading-tight mb-2 text-slate-800">{item.name}</p>
+                    <p className="text-lg font-black text-blue-600">{formatRp(getPrice(item, carSize))}</p>
+                    
+                    {/* Dropdown Ukuran Mobil (Hanya muncul jika item.price berbentuk Object) */}
                     {isSelected && typeof item.price === 'object' && (
-                      <select value={carSize} onChange={e => {e.stopPropagation(); setCarSize(e.target.value)}} className="mt-4 w-full text-xs p-2.5 border border-blue-200 rounded-xl bg-blue-100 text-blue-800 font-bold outline-none text-center appearance-none cursor-pointer">
+                      <select value={carSize} onChange={e => {e.stopPropagation(); setCarSize(e.target.value)}} className="mt-5 w-full max-w-[200px] text-sm p-3 border border-blue-200 rounded-xl bg-blue-100 text-blue-800 font-bold outline-none text-center appearance-none cursor-pointer">
                         <option value="Kecil">Mobil Kecil</option>
                         <option value="Besar">Mobil Besar</option>
                       </select>
@@ -300,14 +307,14 @@ function KasirView({ services, customServices, setCustomServices, setOrders, for
 
         {/* CUSTOM LAYANAN */}
         {!showCustomForm ? (
-          <button onClick={() => setShowCustomForm(true)} className="w-full py-5 border-2 border-dashed border-slate-300 rounded-[2rem] text-slate-400 text-xs font-bold flex items-center justify-center gap-2 bg-white hover:bg-slate-50 hover:text-slate-500 hover:border-slate-400 transition-colors active:bg-slate-100">
-            <Plus size={18}/> Tambah Layanan Khusus
+          <button onClick={() => setShowCustomForm(true)} className="w-full py-5 border-2 border-dashed border-slate-300 rounded-[2rem] text-slate-400 text-sm font-bold flex items-center justify-center gap-2 bg-white hover:bg-slate-50 hover:text-slate-500 hover:border-slate-400 transition-colors active:bg-slate-100">
+            <Plus size={20}/> Tambah Layanan Khusus
           </button>
         ) : (
-          <div className="bg-blue-50 p-5 rounded-[2rem] border border-blue-200 space-y-4 shadow-inner">
+          <div className="bg-blue-50 p-6 rounded-[2rem] border border-blue-200 space-y-4 shadow-inner">
              <div className="flex justify-between items-center px-1">
-                <span className="text-sm font-black text-blue-800">Layanan Baru</span>
-                <button onClick={() => setShowCustomForm(false)} className="bg-blue-100 p-1.5 rounded-full text-blue-500"><X size={18}/></button>
+                <span className="text-base font-black text-blue-800">Layanan Baru</span>
+                <button onClick={() => setShowCustomForm(false)} className="bg-blue-100 p-2 rounded-full text-blue-500"><X size={20}/></button>
              </div>
              <input type="text" placeholder="Nama Layanan (Misa: Poles Kaca)" value={customName} onChange={e => setCustomName(e.target.value)} className="w-full p-4 rounded-2xl text-sm font-bold bg-white border border-blue-100 outline-none focus:ring-2 focus:ring-blue-400 placeholder:font-medium"/>
              <input type="number" placeholder="Harga (Rp)" value={customPrice} onChange={e => setCustomPrice(e.target.value)} className="w-full p-4 rounded-2xl text-sm font-bold bg-white border border-blue-100 outline-none focus:ring-2 focus:ring-blue-400 placeholder:font-medium"/>
@@ -322,7 +329,7 @@ function KasirView({ services, customServices, setCustomServices, setOrders, for
         )}
       </div>
 
-      {/* DISATUKAN DI BAWAH (TIDAK MENGAMBANG LAGI) */}
+      {/* DISATUKAN DI BAWAH */}
       <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 flex justify-between items-center w-full mt-6 mb-8">
         <div className="flex-1 min-w-0 pr-4">
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Total Tagihan</p>
