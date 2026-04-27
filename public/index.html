@@ -15,9 +15,12 @@
       background-color: #f8fafc;
       overflow: hidden; /* Mengunci scroll utama agar tidak terjadi pull-to-refresh */
       
-      /* Kunci utama: Mematikan tarikan refresh browser di Android/iOS */
+      /* Kunci CSS: Mematikan tarikan refresh browser di Android/iOS */
       overscroll-behavior-y: none; 
       overscroll-behavior: none;
+      
+      /* Tambahan: Mematikan aksi sentuh default pada body agar tidak men-trigger sistem browser */
+      touch-action: none;
     }
 
     /* Pengaturan scroll halus untuk perangkat sentuh */
@@ -39,7 +42,12 @@
       scrollbar-width: none;
     }
 
-    /* Memastikan area input tidak terhalang bar navigasi sistem */
+    /* Memastikan area konten tetap bisa di-scroll secara mandiri */
+    /* Karena body dikunci touch-action: none, kita harus mengaktifkannya kembali di kontainer konten */
+    #root > div {
+      touch-action: pan-x pan-y;
+    }
+
     :root {
       --safe-area-inset-bottom: env(safe-area-inset-bottom);
     }
@@ -47,6 +55,24 @@
 </head>
 <body>
   <div id="root"></div>
+  
+  <!-- Script Pengunci Refresh (JavaScript) -->
+  <script>
+    // Mencegah pull-to-refresh secara paksa lewat deteksi gerakan sentuh
+    let startY = 0;
+    document.addEventListener('touchstart', (e) => {
+      startY = e.touches[0].pageY;
+    }, { passive: false });
+
+    document.addEventListener('touchmove', (e) => {
+      const y = e.touches[0].pageY;
+      // Jika pengguna menarik ke bawah (y > startY) dan posisi scroll ada di paling atas
+      if (y > startY && window.scrollY <= 0) {
+        e.preventDefault();
+      }
+    }, { passive: false });
+  </script>
+
   <!-- Library Tailwind CSS untuk desain -->
   <script src="https://cdn.tailwindcss.com"></script>
 </body>
