@@ -27,7 +27,7 @@ import {
 // --- DATA MASTER LAYANAN ---
 const SERVICES = [
   { id: 'w1', name: 'Basic Wash', category: 'Carwash', price: 150000, icon: <Droplets size={32} /> },
-  { id: 'w2', name: 'Super Premium Wash', category: 'Carwash', price: 300000, icon: <Sparkles size={32} />, recommended: true }, // Hanya mobil kecil (harga fixed)
+  { id: 'w2', name: 'Super Premium Wash', category: 'Carwash', price: { Kecil: 300000, Besar: 315000 }, icon: <Sparkles size={32} />, recommended: true },
   { id: 'w3', name: 'Premium Wash', category: 'Carwash', price: 200000, icon: <Wrench size={32} /> },
   { id: 'd1', name: 'Wash(Cuci) Engine', category: 'Engine', price: { Kecil: 125000, Besar: 145000 }, icon: <Car size={32} /> },
   { id: 'd2', name: 'Detailing Engine', category: 'Engine', price: 650000, icon: <Sun size={32} /> },
@@ -110,9 +110,10 @@ export default function App() {
         </defs>
       </svg>
 
-      {/* HEADER SECTION - Menempel penuh ke tepi atas */}
+      {/* HEADER SECTION - Diperpendek */}
       <div className="shrink-0 z-10 w-full">
-        <div className="bg-[#24429A] rounded-b-[2.5rem] px-6 pt-12 pb-8 flex flex-col justify-center shadow-xl shadow-[#24429A]/10 text-white relative overflow-hidden">
+        {/* Mengubah pt-12 pb-8 menjadi pt-8 pb-5 agar header lebih ramping */}
+        <div className="bg-[#24429A] rounded-b-[2rem] px-6 pt-8 pb-5 flex flex-col justify-center shadow-xl shadow-[#24429A]/10 text-white relative overflow-hidden">
           <div className="absolute -right-8 -top-8 w-40 h-40 bg-white/5 rounded-full blur-2xl"></div>
           <div className="absolute -left-10 -bottom-10 w-32 h-32 bg-blue-500/20 rounded-full blur-xl"></div>
           
@@ -122,7 +123,7 @@ export default function App() {
               <p className="text-[11px] font-bold tracking-[0.25em] text-orange-400 mt-1 uppercase">Home Service</p>
             </div>
             <div className="bg-white/10 p-2 rounded-2xl border border-white/20 backdrop-blur-md shadow-sm">
-              <User size={24} className="text-white"/>
+              <User size={20} className="text-white"/>
             </div>
           </div>
         </div>
