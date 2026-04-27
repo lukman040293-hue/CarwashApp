@@ -31,7 +31,6 @@
     }
 
     /* Mengaktifkan kembali scroll HANYA pada area konten aplikasi */
-    /* Kita memberikan izin pan-y (geser atas bawah) secara spesifik */
     .overflow-y-auto {
       -webkit-overflow-scrolling: touch !important;
       overscroll-behavior: contain !important;
@@ -49,38 +48,40 @@
   
   <script>
     (function() {
-      let lastY = 0;
+      // TEKNIK BARU: 1px Scroll Hack
+      // Memaksa area scroll untuk tidak pernah menyentuh angka 0 tepat
+      // sehingga browser tidak menganggap ini sebagai tarikan halaman (pull-to-refresh)
+      
+      document.addEventListener('touchstart', function(e) {
+        const scrollable = document.querySelector('.overflow-y-auto');
+        if (scrollable) {
+          if (scrollable.scrollTop === 0) {
+            scrollable.scrollTop = 1;
+          } else if (scrollable.scrollHeight === scrollable.scrollTop + scrollable.offsetHeight) {
+            scrollable.scrollTop = scrollable.scrollTop - 1;
+          }
+        }
+      }, { passive: true });
 
-      // Mendeteksi awal sentuhan
+      // Pencegahan tambahan untuk gerakan menarik ke bawah
+      let lastY = 0;
       document.addEventListener('touchstart', function(e) {
         lastY = e.touches[0].pageY;
       }, { passive: false });
 
-      // Kontrol penuh pada pergerakan jari
       document.addEventListener('touchmove', function(e) {
-        // Cari elemen yang sedang aktif di-scroll di dalam React (App.js)
         const scrollable = document.querySelector('.overflow-y-auto');
-        
         if (scrollable) {
           const scrollTop = scrollable.scrollTop;
           const currentY = e.touches[0].pageY;
           const isDraggingDown = currentY > lastY;
 
-          // JIKA di posisi paling atas dan ditarik ke bawah -> BLOKIR TOTAL
-          if (scrollTop <= 0 && isDraggingDown) {
+          // Jika posisi di 1px (posisi "palsu" paling atas) dan ditarik ke bawah, kunci!
+          if (scrollTop <= 1 && isDraggingDown) {
             if (e.cancelable) e.preventDefault();
           }
-        } else {
-          // Jika tidak ada area scrollable, jangan izinkan tarikan sama sekali
-          if (e.cancelable) e.preventDefault();
         }
-        
         lastY = e.touches[0].pageY;
-      }, { passive: false }); // Penting: passive false agar preventDefault ditaati browser
-
-      // Tambahan: Pastikan layar tidak mental saat mencapai batas (rubber banding)
-      document.addEventListener('touchend', function(e) {
-        lastY = 0;
       }, { passive: false });
     })();
   </script>
