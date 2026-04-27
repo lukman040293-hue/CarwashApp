@@ -19,21 +19,31 @@
       overscroll-behavior-y: none; 
       overscroll-behavior: none;
       
-      /* Tambahan: Mematikan aksi sentuh default pada body agar tidak men-trigger sistem browser */
+      /* Mematikan aksi sentuh default pada level root agar tidak men-trigger sistem browser */
       touch-action: none;
     }
 
-    /* Pengaturan scroll halus untuk perangkat sentuh */
+    /* Pengaturan agar aplikasi terasa seperti aplikasi native */
     body {
       -webkit-overflow-scrolling: touch;
-      position: fixed; /* Mencegah pergeseran seluruh body saat mencapai batas scroll */
+      position: fixed; 
       top: 0;
       left: 0;
       right: 0;
       bottom: 0;
+      user-select: none; /* Mencegah seleksi teks yang tidak disengaja saat scroll */
+      -webkit-user-select: none;
     }
 
-    /* Sembunyikan scrollbar tapi tetap bisa digeser (untuk tampilan minimalis) */
+    /* Memastikan area konten tetap bisa di-scroll secara mandiri */
+    /* Kita mengaktifkan kembali scroll hanya untuk arah vertikal di dalam aplikasi */
+    #root > div {
+      touch-action: pan-y;
+      height: 100%;
+      overflow-y: auto;
+    }
+
+    /* Sembunyikan scrollbar tapi tetap bisa digeser */
     .hide-scrollbar::-webkit-scrollbar {
       display: none;
     }
@@ -41,36 +51,42 @@
       -ms-overflow-style: none;
       scrollbar-width: none;
     }
-
-    /* Memastikan area konten tetap bisa di-scroll secara mandiri */
-    /* Karena body dikunci touch-action: none, kita harus mengaktifkannya kembali di kontainer konten */
-    #root > div {
-      touch-action: pan-x pan-y;
-    }
-
-    :root {
-      --safe-area-inset-bottom: env(safe-area-inset-bottom);
-    }
   </style>
 </head>
 <body>
   <div id="root"></div>
   
-  <!-- Script Pengunci Refresh (JavaScript) -->
+  <!-- Script Pengunci Refresh Super Kuat -->
   <script>
-    // Mencegah pull-to-refresh secara paksa lewat deteksi gerakan sentuh
-    let startY = 0;
-    document.addEventListener('touchstart', (e) => {
-      startY = e.touches[0].pageY;
-    }, { passive: false });
+    // 1. Mencegah tarikan pada dokumen secara global
+    document.addEventListener('touchmove', function(e) {
+      if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+        // Cek apakah elemen yang di-scroll adalah bagian dari konten yang boleh scroll
+        const scrollableElement = document.querySelector('.overflow-y-auto') || document.querySelector('#root > div');
+        
+        if (scrollableElement) {
+          const isAtTop = scrollableElement.scrollTop === 0;
+          const isScrollingUp = e.touches[0].pageY > startY;
 
-    document.addEventListener('touchmove', (e) => {
-      const y = e.touches[0].pageY;
-      // Jika pengguna menarik ke bawah (y > startY) dan posisi scroll ada di paling atas
-      if (y > startY && window.scrollY <= 0) {
-        e.preventDefault();
+          // Jika di posisi paling atas dan mencoba tarik ke bawah, kunci!
+          if (isAtTop && isScrollingUp) {
+            if (e.cancelable) e.preventDefault();
+          }
+        } else {
+          if (e.cancelable) e.preventDefault();
+        }
       }
     }, { passive: false });
+
+    let startY = 0;
+    document.addEventListener('touchstart', function(e) {
+      startY = e.touches[0].pageY;
+    }, { passive: true });
+
+    // 2. Mencegah "Bounce effect" pada iOS dan Android WebView tertentu
+    window.addEventListener('scroll', function(e) {
+      if (window.scrollY > 0) window.scrollTo(0, 0);
+    });
   </script>
 
   <!-- Library Tailwind CSS untuk desain -->
