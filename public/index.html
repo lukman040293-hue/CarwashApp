@@ -2,13 +2,35 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <!-- Baris ini SANGAT PENTING agar tampilan pas di HP tanpa bisa di-zoom -->
+  <!-- Pengaturan agar tampilan pas di layar HP dan tidak bisa di-zoom manual -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>L Carwash</title>
+  <style>
+    /* Memastikan aplikasi memenuhi layar penuh */
+    html, body, #root {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      background-color: #f8fafc;
+      overflow: hidden; /* Mencegah double scroll pada level body */
+    }
+
+    /* Pengaturan scroll halus untuk perangkat sentuh */
+    body {
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior-y: contain; /* Mencegah tarikan refresh browser yang mengganggu */
+    }
+
+    /* Sembunyikan scrollbar tapi tetap bisa digeser (untuk tampilan minimalis) */
+    .hide-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+  </style>
 </head>
 <body>
   <div id="root"></div>
-  <!-- Library desain Tailwind CSS -->
+  <!-- Library Tailwind CSS untuk desain -->
   <script src="https://cdn.tailwindcss.com"></script>
 </body>
 </html>
