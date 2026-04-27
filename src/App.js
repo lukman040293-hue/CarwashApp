@@ -294,7 +294,12 @@ function KasirView({ services, customServices, setCustomServices, setOrders, for
                     
                     {/* Dropdown Ukuran Mobil (Hanya muncul jika item.price berbentuk Object) */}
                     {isSelected && typeof item.price === 'object' && (
-                      <select value={carSize} onChange={e => {e.stopPropagation(); setCarSize(e.target.value)}} className="mt-5 w-full max-w-[200px] text-sm p-3 border border-blue-200 rounded-xl bg-blue-100 text-blue-800 font-bold outline-none text-center appearance-none cursor-pointer">
+                      <select 
+                        value={carSize} 
+                        onChange={e => {e.stopPropagation(); setCarSize(e.target.value)}} 
+                        onClick={e => e.stopPropagation()} // FIX: Menahan klik agar box tidak tertutup saat memilih ukuran
+                        className="mt-5 w-full max-w-[200px] text-sm p-3 border border-blue-200 rounded-xl bg-blue-100 text-blue-800 font-bold outline-none text-center appearance-none cursor-pointer"
+                      >
                         <option value="Kecil">Mobil Kecil</option>
                         <option value="Besar">Mobil Besar</option>
                       </select>
