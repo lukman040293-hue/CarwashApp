@@ -113,7 +113,8 @@ export default function App() {
 
   const formatRp = (number) => {
     const num = Number(number) || 0;
-    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num);
+    // Menggunakan format manual agar 100% bersih dari karakter aneh saat dicetak ke PDF
+    return `Rp ${num.toLocaleString('id-ID')}`;
   };
 
   const showAlert = (message) => setDialog({ type: 'alert', message });
