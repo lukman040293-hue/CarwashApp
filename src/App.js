@@ -692,7 +692,7 @@ function NotaModal({ order, formatRp, onClose, showAlert }) {
   if (!order) return null;
 
   const handleShareProcess = async () => {
-    showAlert('Sedang memproses gambar nota...');
+    showAlert('Sedang memproses nota...');
 
     const textWa = `*L CARWASH & DETAILING*\nHome Service\n\nID: ${order.id}\nTanggal: ${order.date}\n------------------------\nPelanggan: ${order.customerName}\nWA: ${order.customerPhone || '-'}\nPlat: ${order.plate}\nAlamat: ${order.address || '-'}\n------------------------\nLayanan:\n${(order.items || []).map(it => `- ${it.name}: ${formatRp(it.calculatedPrice)}`).join('\n')}\n------------------------\n*TOTAL: ${formatRp(order.total)}*\n\nTerima kasih atas kepercayaannya!`;
     setTextWaData(textWa);
@@ -718,18 +718,12 @@ function NotaModal({ order, formatRp, onClose, showAlert }) {
       setCapturedImage(canvas.toDataURL('image/jpeg', 0.9));
 
     } catch (error) {
-      showAlert('Gagal membuat gambar nota.');
+      showAlert('Gagal memproses nota.');
     }
-  };
-
-  const handleDownloadImage = () => {
-    // Solusi anti-crash: Instruksi khusus untuk HP Android Webview
-    showAlert('TIPS MENYIMPAN: Tekan dan Tahan (Long Press) pada gambar nota dengan agak kuat, lalu pilih menu "Simpan Gambar" / "Download Image" dari HP Anda.');
   };
 
   const handleSendWA = () => {
     const waUrl = `https://wa.me/?text=${encodeURIComponent(textWaData)}`;
-    // Solusi anti-crash: ganti tab saat ini alih-alih membuka window popup baru
     window.location.href = waUrl; 
   };
 
@@ -737,43 +731,33 @@ function NotaModal({ order, formatRp, onClose, showAlert }) {
     <div className="fixed inset-0 bg-slate-900/90 z-[100] flex items-center justify-center p-5 backdrop-blur-md animate-fadeIn">
       <div className="bg-white w-full max-w-sm rounded-[3rem] overflow-hidden flex flex-col shadow-2xl">
         
+        {/* JIKA MODE SCREENSHOT AKTIF */}
         {capturedImage ? (
           <div className="flex flex-col h-full max-h-[85vh]">
-            <div className="p-4 bg-blue-50 border-b border-blue-100 text-center shrink-0">
-              <p className="text-blue-800 font-bold text-xs mb-1">Nota Berhasil Dibuat!</p>
-              <p className="text-blue-600 text-[10px] leading-tight">Silakan tekan dan tahan gambar di bawah ini untuk menyimpan.</p>
+            <div className="p-4 bg-slate-800 border-b border-slate-700 text-center shrink-0 shadow-md z-10 relative">
+              <p className="text-white font-black text-xs mb-1 uppercase tracking-widest">Nota Siap Disimpan!</p>
+              <p className="text-slate-300 text-[10px] leading-tight">Keamanan aplikasi memblokir unduhan otomatis.<br/>Silakan lakukan <b className="text-yellow-400">SCREENSHOT (Tangkapan Layar)</b> menggunakan HP Anda sekarang.</p>
             </div>
             
-            {/* PERBAIKAN: Menambahkan style WebkitTouchCallout agar fitur Tahan (Long Press) paksa diaktifkan */}
-            <div className="flex-1 overflow-y-auto p-4 bg-slate-100 flex justify-center items-start" style={{ WebkitTouchCallout: 'default' }}>
+            <div className="flex-1 overflow-y-auto p-4 bg-slate-900 flex justify-center items-center hide-scrollbar">
               <img 
                 src={capturedImage} 
                 alt="Nota" 
-                className="max-w-full h-auto rounded-xl shadow-md border border-slate-300" 
-                style={{ 
-                  WebkitTouchCallout: 'default', 
-                  WebkitUserSelect: 'auto', 
-                  userSelect: 'auto', 
-                  pointerEvents: 'auto' 
-                }}
+                className="max-w-full h-auto rounded-xl shadow-2xl" 
               />
             </div>
 
-            <div className="p-5 bg-white shrink-0 flex flex-col gap-3 border-t border-slate-100">
-              <div className="flex gap-2">
-                <button onClick={handleDownloadImage} className="flex-1 py-3.5 rounded-2xl font-bold uppercase tracking-wider bg-slate-800 text-white text-[10px] active:scale-95 transition-transform flex items-center justify-center gap-1.5 shadow-md">
-                  <Download size={16}/> Cara Simpan
-                </button>
-                <button onClick={handleSendWA} className="flex-1 py-3.5 rounded-2xl font-bold uppercase tracking-wider bg-green-500 text-white text-[10px] active:scale-95 transition-transform flex items-center justify-center gap-1.5 shadow-md shadow-green-200">
-                  <Share2 size={16}/> Teks ke WA
-                </button>
-              </div>
-              <button onClick={() => setCapturedImage(null)} className="w-full py-3 rounded-2xl font-bold uppercase tracking-widest bg-slate-100 text-slate-500 text-[10px] active:bg-slate-200">
+            <div className="p-4 bg-white shrink-0 flex flex-col gap-3 border-t border-slate-100 relative z-10">
+              <button onClick={handleSendWA} className="w-full py-4 rounded-2xl font-black uppercase tracking-wider bg-green-500 hover:bg-green-600 text-white text-[10px] active:scale-95 transition-transform flex items-center justify-center gap-2 shadow-xl shadow-green-200">
+                <Share2 size={16}/> Kirim Teks Nota ke WA
+              </button>
+              <button onClick={() => setCapturedImage(null)} className="w-full py-4 rounded-2xl font-black uppercase tracking-widest bg-slate-100 text-slate-500 hover:bg-slate-200 text-[10px] active:scale-95 transition-transform">
                 Kembali
               </button>
             </div>
           </div>
         ) : (
+          /* JIKA NOTA BIASA (BELUM KLIK SHARE) */
           <>
             <div id="nota-capture-area" className="bg-white">
               <div className="bg-slate-50 p-8 text-center relative border-b border-dashed border-slate-200">
