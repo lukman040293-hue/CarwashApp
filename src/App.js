@@ -24,8 +24,6 @@ import {
   User,
   MapPin,
   FileText,
-  Download,
-  Share2,
   FileDown
 } from 'lucide-react';
 
@@ -551,44 +549,6 @@ function LaporanView({ orders, formatRp, showAlert }) {
   const monthOrders = orders.filter(o => o.date && o.date.endsWith(`/${monthStr}`) && o.status === 'Lunas');
   const totalMonth = monthOrders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
 
-  const handleShareRekap = async () => {
-    const text = `*REKAP L CARWASH - ${displayMonthName}*\n\nTotal Pendapatan: ${formatRp(totalMonth)}\nUnit Selesai: ${monthOrders.length} Kendaraan\n\n_Silakan cek file PDF/Excel untuk rincian lengkap._`;
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: `Rekap ${displayMonthName}`, text });
-      } catch (e) {}
-    } else {
-      navigator.clipboard.writeText(text);
-      showAlert('Teks rekap disalin ke clipboard!');
-    }
-  };
-
-  const handleDownloadCSV = () => {
-    if (monthOrders.length === 0) return showAlert("Tidak ada data transaksi bulan ini.");
-
-    let csvContent = "Tanggal,Jam,ID Transaksi,Nama Pelanggan,Plat Nomor,Alamat,Layanan,Total Tagihan\n";
-    monthOrders.forEach(o => {
-      const date = o.date || '';
-      const time = o.time || '';
-      const id = o.id || '';
-      const name = `"${(o.customerName || '').replace(/"/g, '""')}"`;
-      const plate = o.plate || '';
-      const address = `"${(o.address || '').replace(/"/g, '""')}"`;
-      const items = `"${(o.items || []).map(i => i.name).join(', ')}"`;
-      const total = o.total || 0;
-      csvContent += `${date},${time},${id},${name},${plate},${address},${items},${total}\n`;
-    });
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `Rekap_LCarwash_${monthStr.replace('/', '-')}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
   // FUNGSI BARU: GENERATE PDF LANGSUNG (TANPA PRINT WEB)
   const handleDownloadPDF = async () => {
     if (monthOrders.length === 0) return showAlert("Tidak ada data transaksi bulan ini untuk dijadikan PDF.");
@@ -702,24 +662,12 @@ function LaporanView({ orders, formatRp, showAlert }) {
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-2">
+        <div className="flex mt-2">
           <button 
             onClick={handleDownloadPDF} 
-            className="bg-slate-800 hover:bg-slate-900 text-white font-black py-3 rounded-2xl shadow-xl shadow-slate-200 active:scale-95 transition-transform flex flex-col items-center justify-center gap-1.5 text-[9px] uppercase tracking-widest"
+            className="w-full bg-slate-800 hover:bg-slate-900 text-white font-black py-4 rounded-2xl shadow-xl shadow-slate-200 active:scale-95 transition-transform flex flex-row items-center justify-center gap-2 text-xs uppercase tracking-widest"
           >
-            <FileDown size={16}/> Unduh PDF
-          </button>
-          <button 
-            onClick={handleShareRekap} 
-            className="bg-blue-600 hover:bg-blue-700 text-white font-black py-3 rounded-2xl shadow-xl shadow-blue-200 active:scale-95 transition-transform flex flex-col items-center justify-center gap-1.5 text-[9px] uppercase tracking-widest"
-          >
-            <Share2 size={16}/> Bagikan
-          </button>
-          <button 
-            onClick={handleDownloadCSV} 
-            className="bg-green-600 hover:bg-green-700 text-white font-black py-3 rounded-2xl shadow-xl shadow-green-200 active:scale-95 transition-transform flex flex-col items-center justify-center gap-1.5 text-[9px] uppercase tracking-widest"
-          >
-            <Download size={16}/> Excel/CSV
+            <FileDown size={18}/> Unduh PDF
           </button>
         </div>
       </div>
@@ -730,19 +678,6 @@ function LaporanView({ orders, formatRp, showAlert }) {
 // --- KOMPONEN MODAL NOTA (CETAK) ---
 function NotaModal({ order, formatRp, onClose, showAlert }) {
   if (!order) return null;
-
-  const handleShareNota = async () => {
-    const text = `*L CARWASH & DETAILING*\nHome Service\n\nID: ${order.id}\nTanggal: ${order.date}\n------------------------\nPelanggan: ${order.customerName}\nPlat: ${order.plate}\nAlamat: ${order.address}\n------------------------\nLayanan:\n${order.items.map(it => `- ${it.name}: ${formatRp(it.calculatedPrice)}`).join('\n')}\n------------------------\n*TOTAL: ${formatRp(order.total)}*\n\nTerima kasih atas kepercayaannya!`;
-    
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: `Nota ${order.id}`, text });
-      } catch (e) {}
-    } else {
-      navigator.clipboard.writeText(text);
-      showAlert('Nota disalin ke clipboard! Silakan paste di WhatsApp.');
-    }
-  };
 
   return (
     <div className="fixed inset-0 bg-slate-900/90 z-[100] flex items-center justify-center p-5 backdrop-blur-md animate-fadeIn">
@@ -781,12 +716,9 @@ function NotaModal({ order, formatRp, onClose, showAlert }) {
           </div>
         </div>
         
-        <div className="p-6 bg-slate-50 flex gap-2">
-          <button onClick={onClose} className="flex-1 py-4 rounded-2xl font-black uppercase tracking-widest bg-white border border-slate-200 text-slate-400 text-[10px] active:bg-slate-100">Tutup</button>
-          <button onClick={handleShareNota} className="flex-1 py-4 rounded-2xl font-black uppercase tracking-widest bg-green-500 text-white shadow-xl shadow-green-200 text-[10px] flex items-center justify-center gap-1.5 active:scale-95 transition-transform">
-            <Share2 size={16}/> Share
-          </button>
-          <button onClick={() => showAlert('Mencetak struk thermal...')} className="flex-1 py-4 rounded-2xl font-black uppercase tracking-widest bg-blue-600 text-white shadow-xl shadow-blue-200 text-[10px] flex items-center justify-center gap-1.5 active:scale-95 transition-transform">
+        <div className="p-6 bg-slate-50 flex gap-3">
+          <button onClick={onClose} className="flex-1 py-4.5 rounded-2xl font-black uppercase tracking-widest bg-white border border-slate-200 text-slate-400 text-[10px] active:bg-slate-100">Tutup</button>
+          <button onClick={() => showAlert('Mencetak struk thermal...')} className="flex-1 py-4.5 rounded-2xl font-black uppercase tracking-widest bg-blue-600 text-white shadow-xl shadow-blue-200 text-[10px] flex items-center justify-center gap-2 active:scale-95 transition-transform">
             <Printer size={16}/> Cetak
           </button>
         </div>
