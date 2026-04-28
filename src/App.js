@@ -177,7 +177,7 @@ export default function App() {
       )}
 
       {/* CONTENT AREA (Padding bawah ditambahkan lebih besar agar list terakhir tidak terhalang) */}
-      <div className={`flex-1 overflow-y-auto hide-scrollbar px-5 ${activeTab === 'kasir' ? 'pb-48' : 'pb-32'} ${activeTab !== 'kasir' ? 'pt-8' : 'pt-6'} w-full relative`}>
+      <div className={`flex-1 overflow-y-auto hide-scrollbar px-5 ${activeTab === 'kasir' ? 'pb-[180px]' : 'pb-32'} ${activeTab !== 'kasir' ? 'pt-8' : 'pt-6'} w-full relative`}>
         {activeTab === 'kasir' && <KasirView services={SERVICES} customServices={customServices} setCustomServices={setCustomServices} setOrders={setOrders} formatRp={formatRp} setActiveTab={setActiveTab} setActiveNota={setActiveNota} showAlert={showAlert} isKeyboardOpen={isKeyboardOpen} />}
         {activeTab === 'kalender' && <KalenderView orders={orders} formatRp={formatRp} setActiveNota={setActiveNota} />}
         {activeTab === 'riwayat' && <RiwayatView orders={orders} setOrders={setOrders} formatRp={formatRp} setActiveNota={setActiveNota} showAlert={showAlert} showConfirm={showConfirm} />}
@@ -185,7 +185,7 @@ export default function App() {
       </div>
 
       {/* NAVIGASI BAWAH (Tema Oranye) */}
-      <div className={`fixed bottom-6 left-4 right-4 bg-[#f97316] flex justify-between items-center px-2 py-2 z-50 rounded-full shadow-[0_15px_35px_-5px_rgba(249,115,22,0.4)] border border-white/20 mx-auto max-w-lg transition-transform duration-300 ease-in-out ${isKeyboardOpen ? 'translate-y-[150%] opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'}`}>
+      <div className={`fixed bottom-6 left-4 right-4 bg-[#f97316] flex justify-between items-center px-2 py-2 z-50 rounded-[2rem] shadow-none mx-auto max-w-lg transition-transform duration-300 ease-in-out ${isKeyboardOpen ? 'translate-y-[150%] opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'}`}>
         <NavItem icon={<ClipboardList />} label="Kasir" isActive={activeTab === 'kasir'} onClick={() => setActiveTab('kasir')} />
         <NavItem icon={<CalendarDays />} label="Jadwal" isActive={activeTab === 'kalender'} onClick={() => setActiveTab('kalender')} />
         <NavItem icon={<History />} label="Riwayat" isActive={activeTab === 'riwayat'} onClick={() => setActiveTab('riwayat')} />
@@ -212,7 +212,7 @@ export default function App() {
 
 function NavItem({ icon, label, isActive, onClick }) {
   return (
-    <button onClick={onClick} className={`flex items-center justify-center transition-all duration-300 ${isActive ? 'bg-white text-[#f97316] px-6 py-3 rounded-full font-black shadow-lg scale-105' : 'text-white/70 p-3 hover:text-white active:scale-95'}`}>
+    <button onClick={onClick} className={`flex items-center justify-center transition-all duration-300 ${isActive ? 'bg-white text-[#f97316] px-6 py-3 rounded-2xl font-black shadow-lg scale-105' : 'text-white/70 p-3 hover:text-white active:scale-95'}`}>
       {React.cloneElement(icon, { size: 22, strokeWidth: isActive ? 2.5 : 2 })}
       {isActive && <span className="ml-2 text-xs tracking-tight">{label}</span>}
     </button>
@@ -277,7 +277,7 @@ function KasirView({ services, customServices, setCustomServices, setOrders, for
   };
 
   return (
-    <div className="animate-fadeIn space-y-6">
+    <div className="animate-fadeIn space-y-6 relative">
       <div>
         <h2 className="font-black text-lg text-slate-800 flex items-center gap-2.5 mb-4 pl-1">
           <div className="p-2 bg-orange-100 rounded-xl text-orange-600"><Car size={20}/></div>
@@ -409,8 +409,8 @@ function KasirView({ services, customServices, setCustomServices, setOrders, for
         )}
       </div>
 
-      {/* BOX TOTAL HARGA - DIBUAT STICKY/FIXED MENGAMBANG DI ATAS NAVIGASI BAWAH */}
-      <div className={`fixed bottom-[88px] left-4 right-4 mx-auto max-w-lg bg-white p-5 rounded-[2rem] shadow-[0_0px_40px_-10px_rgba(0,0,0,0.15)] border border-slate-100 flex justify-between items-center z-40 transition-all duration-300 ease-in-out ${isKeyboardOpen ? 'translate-y-[150%] opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'}`}>
+      {/* BOX TOTAL HARGA - DIBUAT MENYATU DENGAN NAVIGASI BAWAH SEPERTI DOCK */}
+      <div className={`fixed bottom-6 left-4 right-4 mx-auto max-w-lg bg-white pt-5 px-5 pb-[5.5rem] rounded-[2.5rem] shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.2)] border border-slate-100 flex justify-between items-center z-40 transition-all duration-300 ease-in-out ${isKeyboardOpen ? 'translate-y-[150%] opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'}`}>
         <div className="flex-1 min-w-0 pr-4">
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Total Tagihan</p>
           <p className="text-2xl font-black text-orange-600 leading-none tracking-tight truncate">{formatRp(currentTotal)}</p>
