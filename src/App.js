@@ -723,56 +723,109 @@ function NotaModal({ order, formatRp, onClose, showAlert }) {
   if (!order) return null;
 
   const handleShareNota = async () => {
-    const text = `*L CARWASH & DETAILING*\nHome Service\n\nID: ${order.id}\nTanggal: ${order.date}\n------------------------\nPelanggan: ${order.customerName}\nWA: ${order.customerPhone || '-'}\nPlat: ${order.plate}\nAlamat: ${order.address || '-'}\n------------------------\nLayanan:\n${(order.items || []).map(it => `- ${it.name}: ${formatRp(it.calculatedPrice)}`).join('\n')}\n------------------------\n*TOTAL: ${formatRp(order.total)}*\n\nTerima kasih atas kepercayaannya!`;
-    
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: `Nota ${order.id}`, text });
-      } catch (e) {}
-    } else {
-      navigator.clipboard.writeText(text);
-      showAlert('Nota disalin ke clipboard! Silakan paste di WhatsApp.');
+    showAlert('Sedang memproses gambar nota...');
+
+    try {
+      // 1. Load library pembuat gambar (html2canvas) secara dinamis
+      if (!window.html2canvas) {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+          script.onload = resolve;
+          script.onerror = reject;
+          document.head.appendChild(script);
+        });
+      }
+
+      // 2. Ambil elemen nota untuk di-screenshot
+      const notaElement = document.getElementById('nota-capture-area');
+      
+      // 3. Render menjadi gambar (Canvas)
+      const canvas = await window.html2canvas(notaElement, {
+        scale: 2, // Resolusi tinggi (HD)
+        useCORS: true,
+        backgroundColor: '#ffffff'
+      });
+
+      // 4. Ubah Canvas menjadi file JPG
+      canvas.toBlob(async (blob) => {
+        if (!blob) throw new Error("Gagal membuat gambar");
+        
+        const file = new File([blob], `Nota_${order.id}.jpg`, { type: 'image/jpeg' });
+        const shareData = {
+          title: `Nota Transaksi ${order.id}`,
+          text: `Terima kasih atas kepercayaannya! Berikut nota transaksi Anda dari L CARWASH & DETAILING.`,
+          files: [file] // Lampirkan file gambar
+        };
+
+        // 5. Coba bagikan langsung (Support di Android/iOS)
+        if (navigator.canShare && navigator.canShare(shareData)) {
+          try {
+            await navigator.share(shareData);
+          } catch (err) {
+            console.log("Share dibatalkan pengguna");
+          }
+        } else {
+          // Fallback: Jika HP tidak mendukung share file, otomatis download gambarnya
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `Nota_${order.id}.jpg`;
+          a.click();
+          URL.revokeObjectURL(url);
+          showAlert('Perangkat tidak mendukung share gambar langsung. Nota berhasil diunduh/disimpan ke HP Anda.');
+        }
+      }, 'image/jpeg', 0.9);
+
+    } catch (error) {
+      showAlert('Gagal membuat gambar nota. Pastikan koneksi internet stabil.');
+      console.error(error);
     }
   };
 
   return (
     <div className="fixed inset-0 bg-slate-900/90 z-[100] flex items-center justify-center p-5 backdrop-blur-md animate-fadeIn">
       <div className="bg-white w-full max-w-sm rounded-[3rem] overflow-hidden flex flex-col shadow-2xl">
-        <div className="bg-slate-50 p-8 text-center relative border-b border-dashed border-slate-200">
-          <button onClick={onClose} className="absolute right-6 top-6 text-slate-400 hover:text-slate-600"><X size={24}/></button>
-          <div className="w-16 h-16 bg-blue-600 text-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-xl shadow-blue-200"><Receipt size={32}/></div>
-          <h2 className="font-black text-slate-800 text-xl tracking-tighter">L CARWASH</h2>
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Home Service</p>
-        </div>
         
-        <div className="p-8 text-xs space-y-6">
-          <div className="flex justify-between border-b border-dashed border-slate-100 pb-4">
-             <span className="font-black text-slate-400 uppercase tracking-widest">{order.date || '-'}</span>
-             <span className="font-black text-blue-600 tracking-widest">{order.id || '-'}</span>
+        {/* AREA YANG AKAN DIFOTO/SCREENSHOT (ID: nota-capture-area) */}
+        <div id="nota-capture-area" className="bg-white">
+          <div className="bg-slate-50 p-8 text-center relative border-b border-dashed border-slate-200">
+            <button onClick={onClose} className="absolute right-6 top-6 text-slate-400 hover:text-slate-600 print:hidden"><X size={24}/></button>
+            <div className="w-16 h-16 bg-blue-600 text-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-xl shadow-blue-200"><Receipt size={32}/></div>
+            <h2 className="font-black text-slate-800 text-xl tracking-tighter">L CARWASH</h2>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Home Service</p>
           </div>
           
-          <div>
-            <p className="font-black text-2xl text-slate-800 tracking-tighter">{order.plate || '-'}</p>
-            <p className="text-slate-400 font-black uppercase tracking-widest text-[10px] mt-1">{order.customerName || '-'} | {order.customerPhone || '-'}</p>
-            <p className="text-slate-500 font-medium text-[10px] mt-1.5 leading-relaxed">{order.address || '-'}</p>
-          </div>
+          <div className="p-8 text-xs space-y-6">
+            <div className="flex justify-between border-b border-dashed border-slate-100 pb-4">
+               <span className="font-black text-slate-400 uppercase tracking-widest">{order.date || '-'}</span>
+               <span className="font-black text-blue-600 tracking-widest">{order.id || '-'}</span>
+            </div>
+            
+            <div>
+              <p className="font-black text-2xl text-slate-800 tracking-tighter">{order.plate || '-'}</p>
+              <p className="text-slate-400 font-black uppercase tracking-widest text-[10px] mt-1">{order.customerName || '-'} | {order.customerPhone || '-'}</p>
+              <p className="text-slate-500 font-medium text-[10px] mt-1.5 leading-relaxed">{order.address || '-'}</p>
+            </div>
 
-          <div className="py-5 border-y border-dashed border-slate-200 space-y-3">
-            {(order.items || []).map((it, i) => (
-              <div key={i} className="flex justify-between items-center text-slate-600 font-bold">
-                <span>{it.name}</span>
-                <span className="font-black text-slate-900">{formatRp(it.calculatedPrice)}</span>
-              </div>
-            ))}
-          </div>
+            <div className="py-5 border-y border-dashed border-slate-200 space-y-3">
+              {(order.items || []).map((it, i) => (
+                <div key={i} className="flex justify-between items-center text-slate-600 font-bold">
+                  <span>{it.name}</span>
+                  <span className="font-black text-slate-900">{formatRp(it.calculatedPrice)}</span>
+                </div>
+              ))}
+            </div>
 
-          <div className="flex justify-between items-center text-2xl font-black pt-2">
-            <span className="text-slate-800 tracking-tighter">TOTAL</span>
-            <span className="text-blue-600 truncate max-w-[60%] text-right">{formatRp(order.total)}</span>
+            <div className="flex justify-between items-center text-2xl font-black pt-2 pb-2">
+              <span className="text-slate-800 tracking-tighter">TOTAL</span>
+              <span className="text-blue-600 truncate max-w-[60%] text-right">{formatRp(order.total)}</span>
+            </div>
           </div>
         </div>
+        {/* AKHIR AREA FOTO */}
         
-        <div className="p-6 bg-slate-50 flex gap-2">
+        <div className="p-6 bg-slate-50 flex gap-2 border-t border-slate-100">
           <button onClick={onClose} className="flex-1 py-4 rounded-2xl font-black uppercase tracking-widest bg-white border border-slate-200 text-slate-400 text-[10px] active:bg-slate-100">Tutup</button>
           <button onClick={handleShareNota} className="flex-1 py-4 rounded-2xl font-black uppercase tracking-widest bg-green-500 text-white shadow-xl shadow-green-200 text-[10px] flex items-center justify-center gap-1.5 active:scale-95 transition-transform">
             <Share2 size={16}/> Share
