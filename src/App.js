@@ -29,9 +29,9 @@ import {
 
 // --- DATA MASTER LAYANAN (Diperbarui dengan Foto Asli) ---
 const SERVICES = [
-  { id: 'w1', name: 'Basic Wash', category: 'Carwash', price: 150000, image: 'https://images.unsplash.com/photo-1777400924439-3e5ab46a9373?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', desc: 'Cuci luar dalam, vakum, semir ban.' },
-  { id: 'w2', name: 'Super Premium Wash', category: 'Carwash', price: { Kecil: 300000, Besar: 315000 }, image: 'https://images.unsplash.com/photo-1777398801194-b43d80625efd?q=80&w=880&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', recommended: true, desc: 'Basic wash + wax body + jamur kaca ringan.' },
-  { id: 'w3', name: 'Premium Wash', category: 'Carwash', price: 200000, image: 'https://images.unsplash.com/photo-1777400924425-29aa6b51e01b?q=80&w=1476&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', desc: 'Pencucian detail dengan perlindungan ekstra.' },
+  { id: 'w1', name: 'Basic Wash', category: 'Carwash', price: 150000, image: 'https://images.unsplash.com/photo-1777400924439-3e5ab46a9373?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', desc: 'Prewash, Handwash, Vacum Interior, Dressing Ban, Lap Mircofiber, Finishing' },
+  { id: 'w2', name: 'Premium Wash', category: 'Carwash', price: { Kecil: 300000, Besar: 315000 }, image: 'https://images.unsplash.com/photo-1777398801194-b43d80625efd?q=80&w=880&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', recommended: true, desc: 'Include Detail Wash, Jamur Body + Noda Aspal (RINGAN), Window Cleaning, Emblem Logo, Sela Pintu Cleaning, Interior Detailing Level 1' },
+  { id: 'w3', name: 'Detail Wash', category: 'Carwash', price: 200000, image: 'https://images.unsplash.com/photo-1777400924425-29aa6b51e01b?q=80&w=1476&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', desc: 'Basic Wash, Dressing Interior, Door Jamb / Ketiak pintu' },
   { id: 'd1', name: 'Wash(Cuci) Engine', category: 'Engine', price: { Kecil: 125000, Besar: 145000 }, image: 'https://images.unsplash.com/photo-1777401359919-047b5f0cb0a9?q=80&w=1632&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', desc: 'Pembersihan debu ruang mesin.' },
   { id: 'd2', name: 'Detailing Engine', category: 'Engine', price: 650000, image: 'https://images.unsplash.com/photo-1777401584789-0485762fe359?q=80&w=1631&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', desc: 'Detailing menyeluruh ruang mesin & dressing.' },
   { id: 'a2', name: 'Pembersih noda aspal (Ringan)', category: 'Layanan Tambahan', price: 50000, image: 'https://images.unsplash.com/photo-1777401383326-97bd44e392f1?q=80&w=1632&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', desc: 'Pembersihan kerak noda aspal body bawah.' },
@@ -644,8 +644,8 @@ function KalenderView({ orders, formatRp, setActiveNota }) {
             </div>
           ) : displayOrders.map(o => (
             <div key={o.id} className="bg-white p-5 rounded-[2rem] border border-slate-100 flex gap-4 items-center shadow-sm">
-              <div className="text-center border-r pr-5 border-slate-100 min-w-[70px]">
-                <p className="text-[10px] font-black text-slate-400 mb-1">{(o.date || '').substring(0, 5)}</p>
+              <div className="text-center border-r pr-5 border-slate-100 min-w-[80px]">
+                <p className="text-lg font-black text-slate-800 mb-0.5">{(o.date || '').substring(0, 5)}</p>
                 <p className="text-sm font-black text-[#f97316]">{o.time || '-'}</p>
               </div>
               <div className="flex-1 min-w-0">
@@ -915,6 +915,7 @@ function NotaModal({ order, formatRp, onClose, showAlert }) {
     <div className="fixed inset-0 bg-slate-900/90 z-[100] flex items-center justify-center p-5 backdrop-blur-md animate-fadeIn">
       <div className="bg-white w-full max-w-sm rounded-[3rem] overflow-hidden flex flex-col shadow-2xl">
         
+        {/* JIKA MODE SCREENSHOT AKTIF */}
         {capturedImage ? (
           <div className="flex flex-col h-full max-h-[85vh]">
             <div className="p-4 bg-slate-800 border-b border-slate-700 text-center shrink-0 shadow-md z-10 relative">
@@ -940,6 +941,7 @@ function NotaModal({ order, formatRp, onClose, showAlert }) {
             </div>
           </div>
         ) : (
+          /* JIKA NOTA BIASA (BELUM KLIK SHARE) */
           <>
             <div id="nota-capture-area" className="bg-white">
               <div className="bg-slate-50 p-8 text-center relative border-b border-dashed border-slate-200">
