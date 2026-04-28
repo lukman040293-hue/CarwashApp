@@ -25,14 +25,14 @@ import {
   Download
 } from 'lucide-react';
 
-// --- DATA MASTER LAYANAN (Diperbarui dengan Gambar Kotak & Deskripsi) ---
+// --- DATA MASTER LAYANAN (Diperbarui dengan Foto Asli) ---
 const SERVICES = [
-  { id: 'w1', name: 'Basic Wash', category: 'Carwash', price: 150000, image: 'https://images.unsplash.com/photo-1777398801194-b43d80625efd?q=80&w=880&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', desc: 'Cuci luar dalam, vakum, semir ban.' },
-  { id: 'w2', name: 'Super Premium Wash', category: 'Carwash', price: { Kecil: 300000, Besar: 315000 }, image: 'https://cdn-icons-png.flaticon.com/512/3085/3085330.png', recommended: true, desc: 'Basic wash + wax body + jamur kaca ringan.' },
-  { id: 'w3', name: 'Premium Wash', category: 'Carwash', price: 200000, image: 'https://cdn-icons-png.flaticon.com/512/5034/5034453.png', desc: 'Pencucian detail dengan perlindungan ekstra.' },
-  { id: 'd1', name: 'Wash(Cuci) Engine', category: 'Engine', price: { Kecil: 125000, Besar: 145000 }, image: 'https://cdn-icons-png.flaticon.com/512/3138/3138307.png', desc: 'Pembersihan debu ruang mesin.' },
-  { id: 'd2', name: 'Detailing Engine', category: 'Engine', price: 650000, image: 'https://cdn-icons-png.flaticon.com/512/1973/1973618.png', desc: 'Detailing menyeluruh ruang mesin & dressing.' },
-  { id: 'a2', name: 'Pembersih noda aspal (Ringan)', category: 'Layanan Tambahan', price: 50000, image: 'https://cdn-icons-png.flaticon.com/512/2933/2933939.png', desc: 'Pembersihan kerak noda aspal body bawah.' },
+  { id: 'w1', name: 'Basic Wash', category: 'Carwash', price: 150000, image: 'https://images.unsplash.com/photo-1777400924439-3e5ab46a9373?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', desc: 'Cuci luar dalam, vakum, semir ban.' },
+  { id: 'w2', name: 'Super Premium Wash', category: 'Carwash', price: { Kecil: 300000, Besar: 315000 }, image: 'https://images.unsplash.com/photo-1777398801194-b43d80625efd?q=80&w=880&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', recommended: true, desc: 'Basic wash + wax body + jamur kaca ringan.' },
+  { id: 'w3', name: 'Premium Wash', category: 'Carwash', price: 200000, image: 'https://images.unsplash.com/photo-1777400924425-29aa6b51e01b?q=80&w=1476&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', desc: 'Pencucian detail dengan perlindungan ekstra.' },
+  { id: 'd1', name: 'Wash(Cuci) Engine', category: 'Engine', price: { Kecil: 125000, Besar: 145000 }, image: 'https://images.unsplash.com/photo-1777401359919-047b5f0cb0a9?q=80&w=1632&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', desc: 'Pembersihan debu ruang mesin.' },
+  { id: 'd2', name: 'Detailing Engine', category: 'Engine', price: 650000, image: 'https://images.unsplash.com/photo-1777401584789-0485762fe359?q=80&w=1631&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', desc: 'Detailing menyeluruh ruang mesin & dressing.' },
+  { id: 'a2', name: 'Pembersih noda aspal (Ringan)', category: 'Layanan Tambahan', price: 50000, image: 'https://images.unsplash.com/photo-1777401383326-97bd44e392f1?q=80&w=1632&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', desc: 'Pembersihan kerak noda aspal body bawah.' },
 ];
 
 const getPrice = (item, size) => {
@@ -153,7 +153,6 @@ export default function App() {
             <div className="flex justify-between items-center relative z-10">
               
               <div className="flex items-center gap-3">
-                {/* AREA GAMBAR ICON / LOGO */}
                 <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-2xl p-2 flex items-center justify-center border border-white/30 shadow-sm shrink-0">
                   <img 
                     src="https://cdn-icons-png.flaticon.com/512/1048/1048313.png" 
@@ -317,7 +316,7 @@ function KasirView({ services, customServices, setCustomServices, setOrders, for
         </div>
       </div>
 
-      {/* SECTION DAFTAR LAYANAN (DIPERBARUI DENGAN GAMBAR KOTAK & KETERANGAN HARGA) */}
+      {/* SECTION DAFTAR LAYANAN (KARTU GAMBAR KOTAK KIRI & INFO KANAN) */}
       <div className="space-y-6 pt-4">
         {Object.keys(groupedServices).map(cat => (
           <div key={cat} className="space-y-4">
@@ -326,53 +325,53 @@ function KasirView({ services, customServices, setCustomServices, setOrders, for
             <div className="grid grid-cols-1 gap-4">
               {groupedServices[cat].map(item => {
                 const isSelected = selectedItems.find(i => i.id === item.id);
-                // Menyiapkan gambar untuk layanan custom jika tidak ada
-                const itemImage = item.image || 'https://cdn-icons-png.flaticon.com/512/1048/1048313.png'; 
+                // Menyiapkan gambar default untuk layanan custom yang baru ditambah
+                const itemImage = item.image || 'https://images.unsplash.com/photo-1550524514-411a7f0525ee?w=800&auto=format&fit=crop&q=60'; 
                 
                 return (
                   <div 
                     key={item.id} 
                     onClick={() => toggleItem(item)} 
-                    className={`p-4 rounded-[1.5rem] border-2 transition-all flex flex-col relative cursor-pointer active:scale-[0.98] ${isSelected ? 'border-orange-500 bg-orange-50 shadow-md' : 'bg-white border-slate-100 shadow-sm hover:border-slate-200'}`}
+                    className={`rounded-[1.5rem] border-2 transition-all flex flex-col relative cursor-pointer active:scale-[0.98] overflow-hidden ${isSelected ? 'border-orange-500 bg-orange-50 shadow-md' : 'bg-white border-slate-100 shadow-sm hover:border-slate-200'}`}
                   >
                     
-                    {/* Ikon Ceklis saat dipilih */}
-                    {isSelected && <div className="absolute top-4 right-4 bg-[#f97316] text-white rounded-full p-1 shadow-sm z-10"><CheckCircle size={20}/></div>}
+                    {/* Ikon Ceklis saat dipilih (Melingkar di pojok kanan) */}
+                    {isSelected && <div className="absolute top-3 right-3 bg-[#f97316] text-white rounded-full p-1 shadow-sm z-20"><CheckCircle size={18}/></div>}
                     
-                    <div className="flex flex-row items-center gap-4">
-                      {/* GAMBAR KOTAK (Square Image) */}
-                      <div className={`w-20 h-20 shrink-0 rounded-2xl overflow-hidden border flex items-center justify-center p-2.5 ${isSelected ? 'bg-white border-orange-200' : 'bg-slate-50 border-slate-200'}`}>
-                        <img src={itemImage} alt={item.name} className="w-full h-full object-contain drop-shadow-sm" />
+                    <div className="flex flex-row items-stretch min-h-[110px]">
+                      {/* AREA GAMBAR KOTAK FULL DI KIRI */}
+                      <div className="w-[110px] sm:w-[130px] shrink-0 relative bg-slate-100 border-r border-slate-100">
+                        <img src={itemImage} alt={item.name} className="absolute inset-0 w-full h-full object-cover" />
                       </div>
 
-                      {/* INFORMASI LAYANAN & HARGA */}
-                      <div className="flex-1 min-w-0 pr-6">
+                      {/* INFORMASI LAYANAN & HARGA DI KANAN */}
+                      <div className="flex-1 min-w-0 p-4 pr-10 flex flex-col justify-center">
                         <p className="text-sm font-black leading-tight mb-1 text-slate-800">{item.name}</p>
                         
                         {/* Menampilkan deskripsi kecil (jika ada) */}
-                        {item.desc && <p className="text-[10px] font-medium text-slate-500 mb-2 leading-snug">{item.desc}</p>}
+                        {item.desc && <p className="text-[10px] font-medium text-slate-500 mb-2 leading-snug line-clamp-2">{item.desc}</p>}
                         
                         {/* Keterangan Harga Detail */}
                         {typeof item.price === 'object' ? (
-                          <div className="text-[10px] font-bold text-slate-600 bg-white border border-slate-100 rounded-lg p-2 inline-block shadow-sm">
+                          <div className="text-[10px] font-bold text-slate-600 mt-auto">
                             <span className="block mb-0.5">Kecil: <span className="text-[#f97316] font-black">{formatRp(item.price.Kecil)}</span></span>
                             <span className="block">Besar: <span className="text-[#f97316] font-black">{formatRp(item.price.Besar)}</span></span>
                           </div>
                         ) : (
-                          <p className="text-xs font-black text-[#f97316] bg-white border border-slate-100 rounded-lg p-2 inline-block shadow-sm">{formatRp(item.price)}</p>
+                          <p className="text-xs font-black text-[#f97316] mt-auto">{formatRp(item.price)}</p>
                         )}
                       </div>
                     </div>
 
                     {/* Jika Dipilih & Punya Pilihan Ukuran Mobil, Tampilkan Dropdown */}
                     {isSelected && typeof item.price === 'object' && (
-                      <div className="mt-4 pt-4 border-t border-orange-200">
+                      <div className="p-4 pt-3 border-t border-orange-200 bg-orange-50/50">
                         <p className="text-[10px] font-black text-orange-600 uppercase tracking-widest mb-2 pl-1">Konfirmasi Ukuran Kendaraan:</p>
                         <select 
                           value={carSize} 
                           onChange={e => {e.stopPropagation(); setCarSize(e.target.value)}} 
                           onClick={e => e.stopPropagation()}
-                          className="w-full text-sm p-3 border border-orange-300 rounded-xl bg-orange-100 text-orange-800 font-bold outline-none appearance-none cursor-pointer shadow-sm"
+                          className="w-full text-sm p-3 border border-orange-300 rounded-xl bg-white text-orange-800 font-bold outline-none appearance-none cursor-pointer shadow-sm"
                         >
                           <option value="Kecil">Mobil Kecil - {formatRp(item.price.Kecil)}</option>
                           <option value="Besar">Mobil Besar - {formatRp(item.price.Besar)}</option>
@@ -774,13 +773,11 @@ function NotaModal({ order, formatRp, onClose, showAlert }) {
   };
 
   const handleDownloadImage = () => {
-    // Solusi anti-crash: Instruksi khusus untuk HP Android Webview
     showAlert('TIPS MENYIMPAN: Tekan dan Tahan (Long Press) pada gambar nota dengan agak kuat, lalu pilih menu "Simpan Gambar" / "Download Image" dari HP Anda.');
   };
 
   const handleSendWA = () => {
     const waUrl = `https://wa.me/?text=${encodeURIComponent(textWaData)}`;
-    // Solusi anti-crash: ganti tab saat ini alih-alih membuka window popup baru
     window.location.href = waUrl; 
   };
 
@@ -791,36 +788,24 @@ function NotaModal({ order, formatRp, onClose, showAlert }) {
         {/* JIKA MODE SCREENSHOT AKTIF */}
         {capturedImage ? (
           <div className="flex flex-col h-full max-h-[85vh]">
-            <div className="p-4 bg-blue-50 border-b border-blue-100 text-center shrink-0">
-              <p className="text-blue-800 font-bold text-xs mb-1">Nota Berhasil Dibuat!</p>
-              <p className="text-blue-600 text-[10px] leading-tight">Silakan tekan dan tahan gambar di bawah ini untuk menyimpan.</p>
+            <div className="p-4 bg-slate-800 border-b border-slate-700 text-center shrink-0 shadow-md z-10 relative">
+              <p className="text-white font-black text-xs mb-1 uppercase tracking-widest">Nota Siap Disimpan!</p>
+              <p className="text-slate-300 text-[10px] leading-tight">Keamanan aplikasi memblokir unduhan otomatis.<br/>Silakan lakukan <b className="text-yellow-400">SCREENSHOT (Tangkapan Layar)</b> menggunakan HP Anda sekarang.</p>
             </div>
             
-            {/* PERBAIKAN: Menambahkan style WebkitTouchCallout agar fitur Tahan (Long Press) paksa diaktifkan */}
-            <div className="flex-1 overflow-y-auto p-4 bg-slate-100 flex justify-center items-start" style={{ WebkitTouchCallout: 'default' }}>
+            <div className="flex-1 overflow-y-auto p-4 bg-slate-900 flex justify-center items-center hide-scrollbar">
               <img 
                 src={capturedImage} 
                 alt="Nota" 
-                className="max-w-full h-auto rounded-xl shadow-md border border-slate-300" 
-                style={{ 
-                  WebkitTouchCallout: 'default', 
-                  WebkitUserSelect: 'auto', 
-                  userSelect: 'auto', 
-                  pointerEvents: 'auto' 
-                }}
+                className="max-w-full h-auto rounded-xl shadow-2xl" 
               />
             </div>
 
-            <div className="p-5 bg-white shrink-0 flex flex-col gap-3 border-t border-slate-100">
-              <div className="flex gap-2">
-                <button onClick={handleDownloadImage} className="flex-1 py-3.5 rounded-2xl font-bold uppercase tracking-wider bg-slate-800 text-white text-[10px] active:scale-95 transition-transform flex items-center justify-center gap-1.5 shadow-md">
-                  <Download size={16}/> Cara Simpan
-                </button>
-                <button onClick={handleSendWA} className="flex-1 py-3.5 rounded-2xl font-bold uppercase tracking-wider bg-green-500 text-white text-[10px] active:scale-95 transition-transform flex items-center justify-center gap-1.5 shadow-md shadow-green-200">
-                  <Share2 size={16}/> Teks ke WA
-                </button>
-              </div>
-              <button onClick={() => setCapturedImage(null)} className="w-full py-3 rounded-2xl font-bold uppercase tracking-widest bg-slate-100 text-slate-500 text-[10px] active:bg-slate-200">
+            <div className="p-4 bg-white shrink-0 flex flex-col gap-3 border-t border-slate-100 relative z-10">
+              <button onClick={handleSendWA} className="w-full py-4 rounded-2xl font-black uppercase tracking-wider bg-green-500 hover:bg-green-600 text-white text-[10px] active:scale-95 transition-transform flex items-center justify-center gap-2 shadow-xl shadow-green-200">
+                <Share2 size={16}/> Kirim Teks Nota ke WA
+              </button>
+              <button onClick={() => setCapturedImage(null)} className="w-full py-4 rounded-2xl font-black uppercase tracking-widest bg-slate-100 text-slate-500 hover:bg-slate-200 text-[10px] active:scale-95 transition-transform">
                 Kembali
               </button>
             </div>
