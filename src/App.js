@@ -144,39 +144,41 @@ export default function App() {
         </defs>
       </svg>
 
-      {/* HEADER SECTION (Tema Oranye) */}
-      <div className="shrink-0 z-10 w-full">
-        <div className="bg-[#f97316] rounded-b-[2rem] px-6 pt-8 pb-5 flex flex-col justify-center shadow-xl shadow-[#f97316]/20 text-white relative overflow-hidden">
-          <div className="absolute -right-8 -top-8 w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
-          <div className="absolute -left-10 -bottom-10 w-32 h-32 bg-orange-700/20 rounded-full blur-xl"></div>
-          <div className="flex justify-between items-center relative z-10">
-            
-            <div className="flex items-center gap-3">
-              {/* AREA GAMBAR ICON / LOGO */}
-              <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-2xl p-2 flex items-center justify-center border border-white/30 shadow-sm shrink-0">
-                <img 
-                  src="https://cdn-icons-png.flaticon.com/512/1048/1048313.png" 
-                  alt="Logo L Carwash" 
-                  className="w-full h-full object-contain drop-shadow-md"
-                />
-              </div>
+      {/* HEADER SECTION (Tema Oranye) HANYA TAMPIL DI KASIR */}
+      {activeTab === 'kasir' && (
+        <div className="shrink-0 z-10 w-full">
+          <div className="bg-[#f97316] rounded-b-[2rem] px-6 pt-8 pb-5 flex flex-col justify-center shadow-xl shadow-[#f97316]/20 text-white relative overflow-hidden">
+            <div className="absolute -right-8 -top-8 w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
+            <div className="absolute -left-10 -bottom-10 w-32 h-32 bg-orange-700/20 rounded-full blur-xl"></div>
+            <div className="flex justify-between items-center relative z-10">
               
-              <div>
-                <h1 className="text-sm font-black tracking-[0.1em] text-white uppercase drop-shadow-md leading-tight">L Carwash<br/>& Detailing</h1>
-                <p className="text-[9px] font-bold tracking-[0.25em] text-yellow-200 mt-1 uppercase">Home Service</p>
+              <div className="flex items-center gap-3">
+                {/* AREA GAMBAR ICON / LOGO */}
+                <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-2xl p-2 flex items-center justify-center border border-white/30 shadow-sm shrink-0">
+                  <img 
+                    src="https://cdn-icons-png.flaticon.com/512/1048/1048313.png" 
+                    alt="Logo L Carwash" 
+                    className="w-full h-full object-contain drop-shadow-md"
+                  />
+                </div>
+                
+                <div>
+                  <h1 className="text-sm font-black tracking-[0.1em] text-white uppercase drop-shadow-md leading-tight">L Carwash<br/>& Detailing</h1>
+                  <p className="text-[9px] font-bold tracking-[0.25em] text-yellow-200 mt-1 uppercase">Home Service</p>
+                </div>
               </div>
-            </div>
 
-            <div className="bg-white/20 p-2.5 rounded-2xl border border-white/30 backdrop-blur-md shadow-sm shrink-0">
-              <User size={20} className="text-white"/>
-            </div>
+              <div className="bg-white/20 p-2.5 rounded-2xl border border-white/30 backdrop-blur-md shadow-sm shrink-0">
+                <User size={20} className="text-white"/>
+              </div>
 
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* CONTENT AREA */}
-      <div className="flex-1 overflow-y-auto hide-scrollbar pb-32 px-5 pt-6 w-full relative">
+      <div className={`flex-1 overflow-y-auto hide-scrollbar pb-32 px-5 ${activeTab !== 'kasir' ? 'pt-8' : 'pt-6'} w-full relative`}>
         {activeTab === 'kasir' && <KasirView services={SERVICES} customServices={customServices} setCustomServices={setCustomServices} setOrders={setOrders} formatRp={formatRp} setActiveTab={setActiveTab} setActiveNota={setActiveNota} showAlert={showAlert} />}
         {activeTab === 'kalender' && <KalenderView orders={orders} formatRp={formatRp} setActiveNota={setActiveNota} />}
         {activeTab === 'riwayat' && <RiwayatView orders={orders} setOrders={setOrders} formatRp={formatRp} setActiveNota={setActiveNota} showAlert={showAlert} showConfirm={showConfirm} />}
