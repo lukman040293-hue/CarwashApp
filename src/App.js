@@ -1,4 +1,4 @@
-import React, { useState, useEffect, cloneElement } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ClipboardList, 
   History, 
@@ -26,7 +26,8 @@ import {
   FileText,
   FileDown,
   Phone,
-  Share2
+  Share2,
+  Download
 } from 'lucide-react';
 
 // --- DATA MASTER LAYANAN ---
@@ -113,7 +114,6 @@ export default function App() {
 
   const formatRp = (number) => {
     const num = Number(number) || 0;
-    // Menggunakan format manual agar 100% bersih dari karakter aneh saat dicetak ke PDF
     return `Rp ${num.toLocaleString('id-ID')}`;
   };
 
@@ -558,34 +558,6 @@ function LaporanView({ orders, formatRp, showAlert }) {
   const monthOrders = orders.filter(o => o.date && o.date.endsWith(`/${monthStr}`) && o.status === 'Lunas');
   const totalMonth = monthOrders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
 
-  // Fungsi Export Data CSV/Excel Lengkap dengan Kolom No WA
-  const handleDownloadCSV = () => {
-    if (monthOrders.length === 0) return showAlert("Tidak ada data transaksi bulan ini.");
-
-    let csvContent = "Tanggal,Jam,ID Transaksi,Nama Pelanggan,No WhatsApp,Plat Nomor,Alamat,Layanan,Total Tagihan\n";
-    monthOrders.forEach(o => {
-      const date = o.date || '';
-      const time = o.time || '';
-      const id = o.id || '';
-      const name = `"${(o.customerName || '').replace(/"/g, '""')}"`;
-      const phone = `"${o.customerPhone || '-'}"`;
-      const plate = o.plate || '';
-      const address = `"${(o.address || '').replace(/"/g, '""')}"`;
-      const items = `"${(o.items || []).map(i => i.name).join(', ')}"`;
-      const total = o.total || 0;
-      csvContent += `${date},${time},${id},${name},${phone},${plate},${address},${items},${total}\n`;
-    });
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `Rekap_LCarwash_${monthStr.replace('/', '-')}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
   // FUNGSI BARU: GENERATE PDF LANGSUNG
   const handleDownloadPDF = async () => {
     if (monthOrders.length === 0) return showAlert("Tidak ada data transaksi bulan ini untuk dijadikan PDF.");
@@ -699,18 +671,12 @@ function LaporanView({ orders, formatRp, showAlert }) {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 mt-2">
+        <div className="flex mt-2">
           <button 
             onClick={handleDownloadPDF} 
             className="w-full bg-slate-800 hover:bg-slate-900 text-white font-black py-4 rounded-2xl shadow-xl shadow-slate-200 active:scale-95 transition-transform flex flex-row items-center justify-center gap-2 text-xs uppercase tracking-widest"
           >
-            <FileDown size={18}/> PDF
-          </button>
-          <button 
-            onClick={handleDownloadCSV} 
-            className="w-full bg-green-600 hover:bg-green-700 text-white font-black py-4 rounded-2xl shadow-xl shadow-green-200 active:scale-95 transition-transform flex flex-row items-center justify-center gap-2 text-xs uppercase tracking-widest"
-          >
-            <FileDown size={18}/> Excel
+            <FileDown size={18}/> Unduh PDF
           </button>
         </div>
       </div>
@@ -721,14 +687,17 @@ function LaporanView({ orders, formatRp, showAlert }) {
 // --- KOMPONEN MODAL NOTA (CETAK) ---
 function NotaModal({ order, formatRp, onClose, showAlert }) {
   const [capturedImage, setCapturedImage] = useState(null);
+  const [textWaData, setTextWaData] = useState('');
 
   if (!order) return null;
 
-  const handleShareNota = async () => {
+  const handleShareProcess = async () => {
     showAlert('Sedang memproses gambar nota...');
 
+    const textWa = `*L CARWASH & DETAILING*\nHome Service\n\nID: ${order.id}\nTanggal: ${order.date}\n------------------------\nPelanggan: ${order.customerName}\nWA: ${order.customerPhone || '-'}\nPlat: ${order.plate}\nAlamat: ${order.address || '-'}\n------------------------\nLayanan:\n${(order.items || []).map(it => `- ${it.name}: ${formatRp(it.calculatedPrice)}`).join('\n')}\n------------------------\n*TOTAL: ${formatRp(order.total)}*\n\nTerima kasih atas kepercayaannya!`;
+    setTextWaData(textWa);
+
     try {
-      // 1. Load library pembuat gambar (html2canvas) secara dinamis
       if (!window.html2canvas) {
         await new Promise((resolve, reject) => {
           const script = document.createElement('script');
@@ -739,68 +708,69 @@ function NotaModal({ order, formatRp, onClose, showAlert }) {
         });
       }
 
-      // 2. Ambil elemen nota untuk di-screenshot
       const notaElement = document.getElementById('nota-capture-area');
-      
-      // 3. Render menjadi gambar (Canvas)
       const canvas = await window.html2canvas(notaElement, {
-        scale: 2, // Resolusi tinggi (HD)
+        scale: 2, 
         useCORS: true,
         backgroundColor: '#ffffff'
       });
 
-      // 4. Ubah Canvas menjadi file JPG
-      canvas.toBlob(async (blob) => {
-        if (!blob) throw new Error("Gagal membuat gambar");
-        
-        const file = new File([blob], `Nota_${order.id}.jpg`, { type: 'image/jpeg' });
-        const shareData = {
-          title: `Nota Transaksi ${order.id}`,
-          text: `Terima kasih atas kepercayaannya! Berikut nota transaksi Anda dari L CARWASH & DETAILING.`,
-          files: [file] // Lampirkan file gambar
-        };
-
-        // 5. Coba bagikan langsung (Support di Browser/Beberapa HP)
-        if (navigator.canShare && navigator.canShare(shareData)) {
-          try {
-            await navigator.share(shareData);
-          } catch (err) {
-            // Jika user batal share atau gagal, tampilkan mode tahan gambar
-            setCapturedImage(canvas.toDataURL('image/jpeg', 0.9));
-          }
-        } else {
-          // FALLBACK: Jika HP (APK/Webview) memblokir fitur Share File otomatis,
-          // Tampilkan gambar ke layar agar bisa di-TEKAN & TAHAN oleh user.
-          setCapturedImage(canvas.toDataURL('image/jpeg', 0.9));
-        }
-      }, 'image/jpeg', 0.9);
+      // Menampilkan gambar dan tombol secara eksplisit
+      setCapturedImage(canvas.toDataURL('image/jpeg', 0.9));
 
     } catch (error) {
-      showAlert('Gagal membuat gambar nota. Pastikan koneksi internet stabil.');
-      console.error(error);
+      showAlert('Gagal membuat gambar nota.');
     }
+  };
+
+  const handleDownloadImage = () => {
+    if (!capturedImage) return;
+    const a = document.createElement('a');
+    a.href = capturedImage;
+    a.download = `Nota_${order.id}.jpg`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    
+    // Jika tidak otomatis terunduh di webview
+    showAlert('Jika tidak tersimpan, cek izin penyimpanan di pengaturan aplikasi Anda.');
+  };
+
+  const handleSendWA = () => {
+    const waUrl = `https://wa.me/?text=${encodeURIComponent(textWaData)}`;
+    window.open(waUrl, '_blank');
   };
 
   return (
     <div className="fixed inset-0 bg-slate-900/90 z-[100] flex items-center justify-center p-5 backdrop-blur-md animate-fadeIn">
       <div className="bg-white w-full max-w-sm rounded-[3rem] overflow-hidden flex flex-col shadow-2xl">
         
-        {/* Jika gambar sudah jadi dan HP perlu mode manual, tampilkan ini */}
         {capturedImage ? (
           <div className="flex flex-col h-full max-h-[85vh]">
-            <div className="p-5 bg-amber-50 border-b border-amber-200 text-center shrink-0">
-              <p className="text-amber-800 font-bold text-xs leading-snug">⚠️ Mode Bagikan Manual</p>
-              <p className="text-amber-700 text-[10px] mt-1 font-medium"><b>Tekan & Tahan (Long Press)</b> gambar di bawah ini, lalu pilih <b>"Bagikan Gambar"</b> (ke WA) atau <b>"Simpan"</b> (ke Galeri).</p>
+            <div className="p-4 bg-blue-50 border-b border-blue-100 text-center shrink-0">
+              <p className="text-blue-800 font-bold text-xs mb-1">Nota Berhasil Dibuat!</p>
+              <p className="text-blue-600 text-[10px] leading-tight">Silakan pilih metode pengiriman di bawah ini.</p>
             </div>
-            <div className="flex-1 overflow-y-auto p-4 bg-slate-200 flex justify-center items-start">
+            
+            <div className="flex-1 overflow-y-auto p-4 bg-slate-100 flex justify-center items-start">
               <img src={capturedImage} alt="Nota" className="max-w-full h-auto rounded-xl shadow-md border border-slate-300" />
             </div>
-            <div className="p-5 bg-white shrink-0">
-              <button onClick={() => setCapturedImage(null)} className="w-full py-4 rounded-2xl font-black uppercase tracking-widest bg-slate-100 text-slate-500 text-xs active:bg-slate-200">Kembali ke Nota</button>
+
+            <div className="p-5 bg-white shrink-0 flex flex-col gap-3 border-t border-slate-100">
+              <div className="flex gap-2">
+                <button onClick={handleDownloadImage} className="flex-1 py-3.5 rounded-2xl font-bold uppercase tracking-wider bg-slate-800 text-white text-[10px] active:scale-95 transition-transform flex items-center justify-center gap-1.5 shadow-md">
+                  <Download size={16}/> Unduh Gambar
+                </button>
+                <button onClick={handleSendWA} className="flex-1 py-3.5 rounded-2xl font-bold uppercase tracking-wider bg-green-500 text-white text-[10px] active:scale-95 transition-transform flex items-center justify-center gap-1.5 shadow-md shadow-green-200">
+                  <Share2 size={16}/> Teks ke WA
+                </button>
+              </div>
+              <button onClick={() => setCapturedImage(null)} className="w-full py-3 rounded-2xl font-bold uppercase tracking-widest bg-slate-100 text-slate-500 text-[10px] active:bg-slate-200">
+                Kembali
+              </button>
             </div>
           </div>
         ) : (
-          /* Tampilan Nota Asli (Akan disembunyikan jika gambar berhasil dibuat) */
           <>
             <div id="nota-capture-area" className="bg-white">
               <div className="bg-slate-50 p-8 text-center relative border-b border-dashed border-slate-200">
@@ -840,7 +810,7 @@ function NotaModal({ order, formatRp, onClose, showAlert }) {
             
             <div className="p-6 bg-slate-50 flex gap-2 border-t border-slate-100">
               <button onClick={onClose} className="flex-1 py-4 rounded-2xl font-black uppercase tracking-widest bg-white border border-slate-200 text-slate-400 text-[10px] active:bg-slate-100">Tutup</button>
-              <button onClick={handleShareNota} className="flex-1 py-4 rounded-2xl font-black uppercase tracking-widest bg-green-500 text-white shadow-xl shadow-green-200 text-[10px] flex items-center justify-center gap-1.5 active:scale-95 transition-transform">
+              <button onClick={handleShareProcess} className="flex-1 py-4 rounded-2xl font-black uppercase tracking-widest bg-green-500 text-white shadow-xl shadow-green-200 text-[10px] flex items-center justify-center gap-1.5 active:scale-95 transition-transform">
                 <Share2 size={16}/> Share
               </button>
               <button onClick={() => showAlert('Mencetak struk thermal...')} className="flex-1 py-4 rounded-2xl font-black uppercase tracking-widest bg-blue-600 text-white shadow-xl shadow-blue-200 text-[10px] flex items-center justify-center gap-1.5 active:scale-95 transition-transform">
