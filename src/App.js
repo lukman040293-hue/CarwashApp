@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { 
   ClipboardList, 
   History, 
-  BarChart3, 
+  BarChart, 
   Car, 
   Plus, 
-  CheckCircle2, 
+  CheckCircle, 
   Search,
   Wallet,
   Calendar,
@@ -21,7 +21,8 @@ import {
   CalendarDays,
   ChevronLeft,
   ChevronRight,
-  User
+  User,
+  MapPin
 } from 'lucide-react';
 
 // --- DATA MASTER LAYANAN ---
@@ -35,14 +36,16 @@ const SERVICES = [
 ];
 
 const getPrice = (item, size) => {
+  if (!item || item.price === undefined) return 0;
   if (typeof item.price === 'number') return item.price;
-  return item.price[size] || item.price['Kecil'];
+  return item.price[size] || item.price['Kecil'] || 0;
 };
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('kasir');
   const [activeNota, setActiveNota] = useState(null);
   const [dialog, setDialog] = useState(null);
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
   
   // State Layanan Custom & Order dengan LocalStorage
   const [customServices, setCustomServices] = useState(() => {
@@ -60,15 +63,53 @@ export default function App() {
   });
 
   useEffect(() => {
-    localStorage.setItem('l_carwash_orders', JSON.stringify(orders));
+    try {
+      localStorage.setItem('l_carwash_orders', JSON.stringify(orders));
+    } catch (e) {}
   }, [orders]);
 
   useEffect(() => {
-    localStorage.setItem('l_carwash_custom_services', JSON.stringify(customServices));
+    try {
+      localStorage.setItem('l_carwash_custom_services', JSON.stringify(customServices));
+    } catch (e) {}
   }, [customServices]);
 
+  // LOGIKA PINTAR: Sembunyikan Navigasi saat Keyboard Terbuka
+  useEffect(() => {
+    let timeout;
+    const handleFocusIn = (e) => {
+      if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT')) {
+        clearTimeout(timeout);
+        setIsKeyboardOpen(true);
+        const targetEl = e.target;
+        timeout = setTimeout(() => {
+          try {
+            if (targetEl && typeof targetEl.scrollIntoView === 'function') {
+              targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+          } catch (err) {} 
+        }, 300);
+      }
+    };
+    const handleFocusOut = () => {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => {
+        setIsKeyboardOpen(false);
+      }, 100);
+    };
+
+    window.addEventListener('focusin', handleFocusIn);
+    window.addEventListener('focusout', handleFocusOut);
+    return () => {
+      window.removeEventListener('focusin', handleFocusIn);
+      window.removeEventListener('focusout', handleFocusOut);
+      clearTimeout(timeout);
+    };
+  }, []);
+
   const formatRp = (number) => {
-    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(number);
+    const num = Number(number) || 0;
+    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num);
   };
 
   const showAlert = (message) => setDialog({ type: 'alert', message });
@@ -76,31 +117,17 @@ export default function App() {
 
   return (
     <div className="bg-slate-50 text-slate-800 w-full h-[100dvh] relative overflow-hidden flex flex-col font-sans">
-      {/* GLOBAL STYLES */}
       <style dangerouslySetInnerHTML={{__html: `
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;900&display=swap');
-        
-        html, body { 
-          font-family: 'Outfit', sans-serif; 
-          margin: 0; 
-          padding: 0; 
-          overflow: hidden !important; 
-          background-color: #f8fafc;
-          overscroll-behavior: none !important;
-          -webkit-tap-highlight-color: transparent;
-        }
-
+        html, body { font-family: 'Outfit', sans-serif; margin: 0; padding: 0; overflow: hidden !important; background-color: #f8fafc; overscroll-behavior: none !important; -webkit-tap-highlight-color: transparent; }
         #root { width: 100%; height: 100%; }
-        
         .icon-yellow-grad svg { stroke: url(#yellow-gradient) !important; }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fadeIn { animation: fadeIn 0.3s ease-out forwards; }
       `}} />
 
-      {/* Definisi Gradient untuk Icon */}
       <svg width="0" height="0" className="absolute pointer-events-none">
         <defs>
           <linearGradient id="yellow-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -110,13 +137,11 @@ export default function App() {
         </defs>
       </svg>
 
-      {/* HEADER SECTION - Diperpendek */}
+      {/* HEADER SECTION */}
       <div className="shrink-0 z-10 w-full">
-        {/* Mengubah pt-12 pb-8 menjadi pt-8 pb-5 agar header lebih ramping */}
         <div className="bg-[#24429A] rounded-b-[2rem] px-6 pt-8 pb-5 flex flex-col justify-center shadow-xl shadow-[#24429A]/10 text-white relative overflow-hidden">
           <div className="absolute -right-8 -top-8 w-40 h-40 bg-white/5 rounded-full blur-2xl"></div>
           <div className="absolute -left-10 -bottom-10 w-32 h-32 bg-blue-500/20 rounded-full blur-xl"></div>
-          
           <div className="flex justify-between items-center relative z-10">
             <div>
               <h1 className="text-base font-black tracking-[0.1em] text-white uppercase drop-shadow-md">L Carwash & Detailing</h1>
@@ -138,26 +163,22 @@ export default function App() {
       </div>
 
       {/* NAVIGASI BAWAH */}
-      <div className="fixed bottom-6 left-4 right-4 bg-[#1e3a8a] flex justify-between items-center px-2 py-2 z-50 rounded-full shadow-[0_15px_35px_-5px_rgba(30,58,138,0.5)] border border-white/10 mx-auto max-w-lg">
-        <NavItem icon={<ClipboardList />} label="Kasir" isActive={activeTab === 'kasir'} onClick={() => setActiveTab('kasir')} />
-        <NavItem icon={<CalendarDays />} label="Jadwal" isActive={activeTab === 'kalender'} onClick={() => setActiveTab('kalender')} />
-        <NavItem icon={<History />} label="Riwayat" isActive={activeTab === 'riwayat'} onClick={() => setActiveTab('riwayat')} />
-        <NavItem icon={<BarChart3 />} label="Laporan" isActive={activeTab === 'laporan'} onClick={() => setActiveTab('laporan')} />
+      <div className={`fixed bottom-6 left-4 right-4 bg-[#1e3a8a] flex justify-between items-center px-2 py-2 z-50 rounded-full shadow-[0_15px_35px_-5px_rgba(30,58,138,0.5)] border border-white/10 mx-auto max-w-lg transition-transform duration-300 ease-in-out ${isKeyboardOpen ? 'translate-y-[150%] opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'}`}>
+        <NavItem icon={ClipboardList} label="Kasir" isActive={activeTab === 'kasir'} onClick={() => setActiveTab('kasir')} />
+        <NavItem icon={CalendarDays} label="Jadwal" isActive={activeTab === 'kalender'} onClick={() => setActiveTab('kalender')} />
+        <NavItem icon={History} label="Riwayat" isActive={activeTab === 'riwayat'} onClick={() => setActiveTab('riwayat')} />
+        <NavItem icon={BarChart} label="Laporan" isActive={activeTab === 'laporan'} onClick={() => setActiveTab('laporan')} />
       </div>
 
-      {/* MODAL NOTA */}
+      {/* MODALS */}
       {activeNota && <NotaModal order={activeNota} formatRp={formatRp} onClose={() => setActiveNota(null)} showAlert={showAlert} />}
-
-      {/* MODAL ALERT/CONFIRM */}
       {dialog && (
         <div className="fixed inset-0 bg-slate-900/60 z-[100] flex items-center justify-center p-6 backdrop-blur-sm animate-fadeIn">
           <div className="bg-white rounded-[2.5rem] p-8 w-full max-w-xs shadow-2xl text-center border border-slate-100">
             <div className="w-16 h-16 bg-amber-100 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-5 font-bold text-3xl shadow-inner shadow-amber-200/50">!</div>
             <p className="text-slate-800 font-bold mb-8 text-base">{dialog.message}</p>
             <div className="flex gap-3">
-              {dialog.type === 'confirm' && (
-                <button onClick={() => setDialog(null)} className="flex-1 py-4 rounded-2xl bg-slate-100 text-slate-600 font-bold text-sm active:bg-slate-200 transition-colors">Batal</button>
-              )}
+              {dialog.type === 'confirm' && <button onClick={() => setDialog(null)} className="flex-1 py-4 rounded-2xl bg-slate-100 text-slate-600 font-bold text-sm active:bg-slate-200 transition-colors">Batal</button>}
               <button onClick={() => { if (dialog.onConfirm) dialog.onConfirm(); setDialog(null); }} className="flex-1 py-4 rounded-2xl bg-blue-600 text-white font-bold text-sm shadow-xl shadow-blue-200 active:scale-95 transition-transform">OK</button>
             </div>
           </div>
@@ -167,11 +188,11 @@ export default function App() {
   );
 }
 
-// --- SUB-KOMPONEN NAVIGASI ---
-function NavItem({ icon, label, isActive, onClick }) {
+// Perbaikan komponen Navigasi (mencegah error cloneElement)
+function NavItem({ icon: Icon, label, isActive, onClick }) {
   return (
     <button onClick={onClick} className={`flex items-center justify-center transition-all duration-300 ${isActive ? 'bg-yellow-400 text-[#1e3a8a] px-6 py-3 rounded-full font-black shadow-lg scale-105' : 'text-white/40 p-3 hover:text-white/70 active:scale-95'}`}>
-      {React.cloneElement(icon, { size: 22, strokeWidth: isActive ? 2.5 : 2 })}
+      <Icon size={22} strokeWidth={isActive ? 2.5 : 2} />
       {isActive && <span className="ml-2 text-xs tracking-tight">{label}</span>}
     </button>
   );
@@ -180,6 +201,7 @@ function NavItem({ icon, label, isActive, onClick }) {
 // --- VIEW: KASIR ---
 function KasirView({ services, customServices, setCustomServices, setOrders, formatRp, setActiveTab, setActiveNota, showAlert }) {
   const [customerName, setCustomerName] = useState('');
+  const [address, setAddress] = useState('');
   const [plate, setPlate] = useState('');
   const [carType, setCarType] = useState('');
   const [carSize, setCarSize] = useState('Kecil');
@@ -208,6 +230,7 @@ function KasirView({ services, customServices, setCustomServices, setOrders, for
   const handleSimpan = () => {
     if (selectedItems.length === 0) return showAlert('Pilih minimal 1 layanan!');
     if (!plate) return showAlert('Plat nomor wajib diisi!');
+    if (!address) return showAlert('Alamat wajib diisi untuk Home Service!');
     
     const itemsWithPrice = selectedItems.map(item => ({ ...item, calculatedPrice: getPrice(item, carSize) }));
     
@@ -216,6 +239,7 @@ function KasirView({ services, customServices, setCustomServices, setOrders, for
       date: orderDate.split('-').reverse().join('/'),
       time: orderTime,
       customerName: customerName || 'Pelanggan Umum',
+      address: address || '-', 
       plate: plate.toUpperCase(),
       carType: carType || '-',
       carSize: selectedItems.some(i => typeof i.price === 'object') ? carSize : '-', 
@@ -231,40 +255,33 @@ function KasirView({ services, customServices, setCustomServices, setOrders, for
 
   return (
     <div className="animate-fadeIn space-y-6">
-      
-      {/* SECTION FORM KENDARAAN (Satu Baris Satu Isian) */}
       <div>
         <h2 className="font-black text-lg text-slate-800 flex items-center gap-2.5 mb-4 pl-1">
           <div className="p-2 bg-blue-100 rounded-xl text-blue-600"><Car size={20}/></div>
-          Data Kendaraan
+          Pelanggan & Kendaraan
         </h2>
         
         <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 space-y-5">
-          {/* Tanggal */}
           <div className="space-y-2">
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5 pl-1"><Calendar size={12}/> Tanggal</label>
             <input type="date" value={orderDate} onChange={e => setOrderDate(e.target.value)} className="w-full bg-slate-50 border border-slate-100 rounded-[1.25rem] p-4 text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-slate-700"/>
           </div>
-
-          {/* Jam */}
           <div className="space-y-2">
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5 pl-1"><Clock size={12}/> Jam</label>
             <input type="time" value={orderTime} onChange={e => setOrderTime(e.target.value)} className="w-full bg-slate-50 border border-slate-100 rounded-[1.25rem] p-4 text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-slate-700"/>
           </div>
-
-          {/* Nama Pemilik */}
           <div className="space-y-2">
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1 flex items-center gap-1.5"><User size={12}/> Nama Pemilik</label>
             <input type="text" placeholder="Masukkan nama pelanggan..." value={customerName} onChange={e => setCustomerName(e.target.value)} className="w-full bg-slate-50 border border-slate-100 rounded-[1.25rem] p-4 text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all placeholder:text-slate-300 placeholder:font-medium"/>
           </div>
-
-          {/* Tipe Mobil */}
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1 flex items-center gap-1.5"><MapPin size={12}/> Alamat Lengkap</label>
+            <textarea placeholder="Masukkan alamat lokasi pelanggan..." value={address} onChange={e => setAddress(e.target.value)} rows="3" className="w-full bg-slate-50 border border-slate-100 rounded-[1.25rem] p-4 text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all placeholder:text-slate-300 placeholder:font-medium resize-none"></textarea>
+          </div>
           <div className="space-y-2">
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Tipe Mobil</label>
             <input type="text" placeholder="Contoh: Pajero Sport, Avanza" value={carType} onChange={e => setCarType(e.target.value)} className="w-full bg-slate-50 border border-slate-100 rounded-[1.25rem] p-4 text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all placeholder:text-slate-300 placeholder:font-medium"/>
           </div>
-
-          {/* Plat Nomor */}
           <div className="space-y-2">
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Plat Nomor</label>
             <input type="text" placeholder="B 1234 XYZ" value={plate} onChange={e => setPlate(e.target.value)} className="w-full bg-slate-50 border border-slate-100 rounded-[1.25rem] p-4 text-sm font-black uppercase outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all placeholder:text-slate-300 placeholder:font-medium"/>
@@ -272,32 +289,25 @@ function KasirView({ services, customServices, setCustomServices, setOrders, for
         </div>
       </div>
 
-      {/* SECTION DAFTAR LAYANAN (1 Layar HP 1 Kolom Penuh) */}
+      {/* SECTION DAFTAR LAYANAN */}
       <div className="space-y-6 pt-4">
         {Object.keys(groupedServices).map(cat => (
           <div key={cat} className="space-y-4">
             <h3 className="font-black text-xs text-slate-400 uppercase tracking-[0.2em] ml-2">{cat}</h3>
-            {/* grid-cols-1 untuk tampilan penuh lebar dari atas ke bawah */}
             <div className="grid grid-cols-1 gap-4">
               {groupedServices[cat].map(item => {
                 const isSelected = selectedItems.find(i => i.id === item.id);
                 return (
                   <div key={item.id} onClick={() => toggleItem(item)} className={`p-6 rounded-[2rem] border-2 transition-all flex flex-col items-center text-center relative cursor-pointer active:scale-[0.98] ${isSelected ? 'border-blue-500 bg-blue-50 shadow-md' : 'bg-white border-slate-100 shadow-sm hover:border-slate-200'}`}>
-                    {isSelected && <div className="absolute top-4 right-4 bg-blue-600 text-white rounded-full p-1 shadow-sm"><CheckCircle2 size={20}/></div>}
-                    
-                    {/* Ikon diperbesar */}
+                    {isSelected && <div className="absolute top-4 right-4 bg-blue-600 text-white rounded-full p-1 shadow-sm"><CheckCircle size={20}/></div>}
                     <div className="mb-4 icon-yellow-grad scale-125">{item.category === 'Layanan Custom' ? <Wrench size={32}/> : item.icon}</div>
-                    
-                    {/* Teks diperbesar */}
                     <p className="text-sm font-bold leading-tight mb-2 text-slate-800">{item.name}</p>
                     <p className="text-lg font-black text-blue-600">{formatRp(getPrice(item, carSize))}</p>
-                    
-                    {/* Dropdown Ukuran Mobil (Hanya muncul jika item.price berbentuk Object) */}
                     {isSelected && typeof item.price === 'object' && (
                       <select 
                         value={carSize} 
                         onChange={e => {e.stopPropagation(); setCarSize(e.target.value)}} 
-                        onClick={e => e.stopPropagation()} // FIX: Menahan klik agar box tidak tertutup saat memilih ukuran
+                        onClick={e => e.stopPropagation()}
                         className="mt-5 w-full max-w-[200px] text-sm p-3 border border-blue-200 rounded-xl bg-blue-100 text-blue-800 font-bold outline-none text-center appearance-none cursor-pointer"
                       >
                         <option value="Kecil">Mobil Kecil</option>
@@ -311,9 +321,8 @@ function KasirView({ services, customServices, setCustomServices, setOrders, for
           </div>
         ))}
 
-        {/* CUSTOM LAYANAN */}
         {!showCustomForm ? (
-          <button onClick={() => setShowCustomForm(true)} className="w-full py-5 border-2 border-dashed border-slate-300 rounded-[2rem] text-slate-400 text-sm font-bold flex items-center justify-center gap-2 bg-white hover:bg-slate-50 hover:text-slate-500 hover:border-slate-400 transition-colors active:bg-slate-100">
+          <button onClick={() => setShowCustomForm(true)} className="w-full py-5 border-2 border-dashed border-slate-300 rounded-[2rem] text-slate-400 text-sm font-bold flex items-center justify-center gap-2 bg-white hover:bg-slate-50 transition-colors active:bg-slate-100">
             <Plus size={20}/> Tambah Layanan Khusus
           </button>
         ) : (
@@ -322,8 +331,8 @@ function KasirView({ services, customServices, setCustomServices, setOrders, for
                 <span className="text-base font-black text-blue-800">Layanan Baru</span>
                 <button onClick={() => setShowCustomForm(false)} className="bg-blue-100 p-2 rounded-full text-blue-500"><X size={20}/></button>
              </div>
-             <input type="text" placeholder="Nama Layanan (Misa: Poles Kaca)" value={customName} onChange={e => setCustomName(e.target.value)} className="w-full p-4 rounded-2xl text-sm font-bold bg-white border border-blue-100 outline-none focus:ring-2 focus:ring-blue-400 placeholder:font-medium"/>
-             <input type="number" placeholder="Harga (Rp)" value={customPrice} onChange={e => setCustomPrice(e.target.value)} className="w-full p-4 rounded-2xl text-sm font-bold bg-white border border-blue-100 outline-none focus:ring-2 focus:ring-blue-400 placeholder:font-medium"/>
+             <input type="text" placeholder="Nama Layanan (Misa: Poles Kaca)" value={customName} onChange={e => setCustomName(e.target.value)} className="w-full p-4 rounded-2xl text-sm font-bold bg-white border border-blue-100 outline-none focus:ring-2 focus:ring-blue-400"/>
+             <input type="number" placeholder="Harga (Rp)" value={customPrice} onChange={e => setCustomPrice(e.target.value)} className="w-full p-4 rounded-2xl text-sm font-bold bg-white border border-blue-100 outline-none focus:ring-2 focus:ring-blue-400"/>
              <button onClick={() => {
                 if(!customName || !customPrice) return;
                 const ns = { id: Date.now(), name: customName, price: parseInt(customPrice), category: 'Layanan Custom' };
@@ -335,14 +344,13 @@ function KasirView({ services, customServices, setCustomServices, setOrders, for
         )}
       </div>
 
-      {/* DISATUKAN DI BAWAH */}
       <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 flex justify-between items-center w-full mt-6 mb-8">
         <div className="flex-1 min-w-0 pr-4">
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Total Tagihan</p>
           <p className="text-2xl font-black text-blue-600 leading-none tracking-tight truncate">{formatRp(currentTotal)}</p>
         </div>
         <button onClick={handleSimpan} className="shrink-0 bg-blue-600 hover:bg-blue-700 text-white font-black px-8 py-4 rounded-2xl shadow-xl shadow-blue-200 active:scale-95 transition-transform flex items-center justify-center gap-2">
-          Simpan <CheckCircle2 size={20}/>
+          Simpan <CheckCircle size={20}/>
         </button>
       </div>
     </div>
@@ -352,28 +360,67 @@ function KasirView({ services, customServices, setCustomServices, setOrders, for
 // --- VIEW: KALENDER / JADWAL ---
 function KalenderView({ orders, formatRp, setActiveNota }) {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState(null); 
   const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
   
-  const dayOrders = orders.filter(o => o.date === `${selectedDate.getDate().toString().padStart(2,'0')}/${(selectedDate.getMonth()+1).toString().padStart(2,'0')}/${selectedDate.getFullYear()}`);
+  const currentMonthStr = (currentDate.getMonth() + 1).toString().padStart(2, '0');
+  const currentYearStr = currentDate.getFullYear().toString();
+  
+  const monthOrders = orders.filter(o => o.date && o.date.endsWith(`/${currentMonthStr}/${currentYearStr}`));
+  
+  monthOrders.sort((a, b) => {
+    const timeA = a.time || '';
+    const timeB = b.time || '';
+    const dayA = parseInt((a.date || '').split('/')[0], 10) || 0;
+    const dayB = parseInt((b.date || '').split('/')[0], 10) || 0;
+    if (dayA !== dayB) return dayA - dayB;
+    return timeA.localeCompare(timeB);
+  });
+
+  const displayOrders = selectedDate 
+    ? monthOrders.filter(o => o.date === `${selectedDate.getDate().toString().padStart(2,'0')}/${currentMonthStr}/${currentYearStr}`)
+    : monthOrders;
+
+  const handlePrevMonth = () => {
+    setCurrentDate(new Date(currentDate.setMonth(currentDate.getMonth()-1)));
+    setSelectedDate(null);
+  };
+
+  const handleNextMonth = () => {
+    setCurrentDate(new Date(currentDate.setMonth(currentDate.getMonth()+1)));
+    setSelectedDate(null);
+  };
+
+  const handleDateClick = (day) => {
+    const clickedDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+    if (selectedDate && selectedDate.getDate() === day && selectedDate.getMonth() === currentDate.getMonth()) {
+      setSelectedDate(null);
+    } else {
+      setSelectedDate(clickedDate);
+    }
+  };
 
   return (
     <div className="animate-fadeIn space-y-6">
       <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm text-center">
         <div className="flex justify-between items-center mb-6">
-          <button onClick={() => setCurrentDate(new Date(currentDate.setMonth(currentDate.getMonth()-1)))} className="p-3 bg-slate-50 hover:bg-slate-100 rounded-2xl transition-colors"><ChevronLeft size={20} className="text-slate-500"/></button>
+          <button onClick={handlePrevMonth} className="p-3 bg-slate-50 hover:bg-slate-100 rounded-2xl transition-colors"><ChevronLeft size={20} className="text-slate-500"/></button>
           <h3 className="font-black text-slate-800 text-base">{monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}</h3>
-          <button onClick={() => setCurrentDate(new Date(currentDate.setMonth(currentDate.getMonth()+1)))} className="p-3 bg-slate-50 hover:bg-slate-100 rounded-2xl transition-colors"><ChevronRight size={20} className="text-slate-500"/></button>
+          <button onClick={handleNextMonth} className="p-3 bg-slate-50 hover:bg-slate-100 rounded-2xl transition-colors"><ChevronRight size={20} className="text-slate-500"/></button>
         </div>
         <div className="grid grid-cols-7 gap-1">
           {['Min','Sen','Sel','Rab','Kam','Jum','Sab'].map(d => <div key={d} className="text-[10px] font-black text-slate-300 py-2 tracking-widest">{d}</div>)}
           {Array.from({length: new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay()}).map((_, i) => <div key={i}/>)}
           {Array.from({length: new Date(currentDate.getFullYear(), currentDate.getMonth()+1, 0).getDate()}).map((_, i) => {
             const day = i + 1;
-            const isSel = day === selectedDate.getDate() && currentDate.getMonth() === selectedDate.getMonth();
+            const isSel = selectedDate && day === selectedDate.getDate() && currentDate.getMonth() === selectedDate.getMonth();
+            const dateStr = `${day.toString().padStart(2,'0')}/${currentMonthStr}/${currentYearStr}`;
+            const hasOrder = monthOrders.some(o => o.date === dateStr);
+
             return (
-              <div key={day} onClick={() => setSelectedDate(new Date(currentDate.getFullYear(), currentDate.getMonth(), day))} className={`aspect-square flex items-center justify-center text-sm font-bold rounded-full cursor-pointer transition-all ${isSel ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 scale-110' : 'text-slate-600 hover:bg-slate-50'}`}>
-                {day}
+              <div key={day} onClick={() => handleDateClick(day)} className={`aspect-square flex flex-col items-center justify-center rounded-full cursor-pointer transition-all ${isSel ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 scale-110' : 'text-slate-600 hover:bg-slate-50'}`}>
+                <span className="text-sm font-bold leading-none">{day}</span>
+                {hasOrder && <div className={`w-1.5 h-1.5 rounded-full mt-1 ${isSel ? 'bg-white' : 'bg-orange-500'}`}></div>}
               </div>
             );
           })}
@@ -381,20 +428,38 @@ function KalenderView({ orders, formatRp, setActiveNota }) {
       </div>
 
       <div>
-        <h3 className="font-black text-sm px-2 mb-4 text-slate-800 flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-          Jadwal: {selectedDate.getDate()} {monthNames[selectedDate.getMonth()]}
-        </h3>
+        <div className="flex justify-between items-center mb-4 px-2">
+          <h3 className="font-black text-sm text-slate-800 flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+            {selectedDate ? `Jadwal: ${selectedDate.getDate()} ${monthNames[selectedDate.getMonth()]}` : `Semua Jadwal Bulan Ini`}
+          </h3>
+          {selectedDate && (
+            <button onClick={() => setSelectedDate(null)} className="text-[10px] font-bold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-xl uppercase tracking-widest">
+              Lihat Semua
+            </button>
+          )}
+        </div>
+
         <div className="space-y-4">
-          {dayOrders.length === 0 ? (
+          {displayOrders.length === 0 ? (
             <div className="bg-white/50 border-2 border-dashed border-slate-200 rounded-[2.5rem] p-12 text-center">
               <CalendarDays className="mx-auto text-slate-300 mb-3" size={40}/>
               <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em]">Tidak ada jadwal</p>
             </div>
-          ) : dayOrders.map(o => (
+          ) : displayOrders.map(o => (
             <div key={o.id} className="bg-white p-5 rounded-[2rem] border border-slate-100 flex gap-4 items-center shadow-sm">
-              <div className="text-center border-r pr-5 border-slate-100"><p className="text-sm font-black text-blue-600">{o.time}</p></div>
-              <div className="flex-1"><p className="font-black text-slate-800 text-base">{o.plate}</p><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{o.customerName}</p></div>
+              <div className="text-center border-r pr-5 border-slate-100 min-w-[70px]">
+                <p className="text-[10px] font-black text-slate-400 mb-1">{(o.date || '').substring(0, 5)}</p>
+                <p className="text-sm font-black text-blue-600">{o.time || '-'}</p>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-black text-slate-800 text-base truncate">{o.plate || '-'}</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 truncate">{o.customerName || '-'}</p>
+                <p className="text-[10px] font-medium text-slate-500 mt-1.5 flex items-start gap-1 leading-snug">
+                  <MapPin size={12} className="shrink-0 text-slate-400 mt-0.5"/> 
+                  <span className="line-clamp-2">{o.address || '-'}</span>
+                </p>
+              </div>
               <button onClick={() => setActiveNota(o)} className="p-3.5 bg-slate-50 hover:bg-blue-50 text-slate-400 hover:text-blue-600 rounded-2xl transition-colors"><Printer size={20}/></button>
             </div>
           ))}
@@ -407,13 +472,20 @@ function KalenderView({ orders, formatRp, setActiveNota }) {
 // --- VIEW: RIWAYAT PESANAN ---
 function RiwayatView({ orders, setOrders, formatRp, setActiveNota, showConfirm }) {
   const [search, setSearch] = useState('');
-  const filtered = orders.filter(o => o.plate.toLowerCase().includes(search.toLowerCase()) || o.id.toLowerCase().includes(search.toLowerCase()));
+  
+  const filtered = orders.filter(o => {
+    const s = search.toLowerCase();
+    const plate = o.plate || '';
+    const id = o.id || '';
+    const address = o.address || '';
+    return plate.toLowerCase().includes(s) || id.toLowerCase().includes(s) || address.toLowerCase().includes(s);
+  });
 
   return (
     <div className="animate-fadeIn space-y-5">
       <div className="bg-white p-1 rounded-[1.5rem] border border-slate-100 shadow-sm flex items-center px-5">
         <Search size={20} className="text-slate-300"/>
-        <input type="text" placeholder="Cari Plat Nomor atau ID Transaksi..." value={search} onChange={e => setSearch(e.target.value)} className="flex-1 p-4 text-sm font-bold outline-none bg-transparent placeholder:font-medium"/>
+        <input type="text" placeholder="Cari Plat, ID, atau Alamat..." value={search} onChange={e => setSearch(e.target.value)} className="flex-1 p-4 text-sm font-bold outline-none bg-transparent placeholder:font-medium"/>
       </div>
       
       <div className="space-y-5 pb-10">
@@ -422,16 +494,17 @@ function RiwayatView({ orders, setOrders, formatRp, setActiveNota, showConfirm }
             <div key={order.id} className="bg-white rounded-[2.5rem] p-6 shadow-sm border border-slate-100 relative overflow-hidden">
               <div className={`absolute left-0 top-0 bottom-0 w-2.5 ${order.status === 'Lunas' ? 'bg-green-500' : 'bg-amber-500'}`}/>
               <div className="flex justify-between items-start mb-4 pl-3">
-                <div>
-                  <h4 className="font-black text-slate-800 text-xl tracking-tight">{order.plate}</h4>
-                  <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1">{order.customerName}</p>
+                <div className="pr-2">
+                  <h4 className="font-black text-slate-800 text-xl tracking-tight">{order.plate || '-'}</h4>
+                  <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1">{order.customerName || '-'}</p>
+                  <p className="text-[10px] text-slate-500 mt-1 line-clamp-1">{order.address || '-'}</p>
                 </div>
-                <span className={`text-[10px] px-3 py-1.5 rounded-xl font-black uppercase tracking-widest ${order.status === 'Lunas' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>{order.status}</span>
+                <span className={`text-[10px] px-3 py-1.5 rounded-xl font-black uppercase tracking-widest shrink-0 ${order.status === 'Lunas' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>{order.status}</span>
               </div>
               
               <div className="bg-slate-50 rounded-3xl p-5 my-4 text-xs font-semibold text-slate-600 border border-slate-100">
                 <ul className="space-y-2">
-                  {order.items.map((it, i) => <li key={i} className="flex justify-between"><span>• {it.name}</span> <span className="font-black text-slate-400">{formatRp(it.calculatedPrice)}</span></li>)}
+                  {(order.items || []).map((it, i) => <li key={i} className="flex justify-between"><span>• {it.name}</span> <span className="font-black text-slate-400">{formatRp(it.calculatedPrice)}</span></li>)}
                 </ul>
               </div>
 
@@ -458,7 +531,7 @@ function RiwayatView({ orders, setOrders, formatRp, setActiveNota, showConfirm }
 // --- VIEW: LAPORAN ---
 function LaporanView({ orders, formatRp }) {
   const lunas = orders.filter(o => o.status === 'Lunas');
-  const total = lunas.reduce((sum, o) => sum + o.total, 0);
+  const total = lunas.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
 
   return (
     <div className="animate-fadeIn space-y-6">
@@ -486,6 +559,7 @@ function LaporanView({ orders, formatRp }) {
 
 // --- KOMPONEN MODAL NOTA (CETAK) ---
 function NotaModal({ order, formatRp, onClose, showAlert }) {
+  if (!order) return null;
   return (
     <div className="fixed inset-0 bg-slate-900/90 z-[100] flex items-center justify-center p-5 backdrop-blur-md animate-fadeIn">
       <div className="bg-white w-full max-w-sm rounded-[3rem] overflow-hidden flex flex-col shadow-2xl">
@@ -498,17 +572,18 @@ function NotaModal({ order, formatRp, onClose, showAlert }) {
         
         <div className="p-8 text-xs space-y-6">
           <div className="flex justify-between border-b border-dashed border-slate-100 pb-4">
-             <span className="font-black text-slate-400 uppercase tracking-widest">{order.date}</span>
-             <span className="font-black text-blue-600 tracking-widest">{order.id}</span>
+             <span className="font-black text-slate-400 uppercase tracking-widest">{order.date || '-'}</span>
+             <span className="font-black text-blue-600 tracking-widest">{order.id || '-'}</span>
           </div>
           
           <div>
-            <p className="font-black text-2xl text-slate-800 tracking-tighter">{order.plate}</p>
-            <p className="text-slate-400 font-black uppercase tracking-widest text-[10px] mt-1">{order.customerName}</p>
+            <p className="font-black text-2xl text-slate-800 tracking-tighter">{order.plate || '-'}</p>
+            <p className="text-slate-400 font-black uppercase tracking-widest text-[10px] mt-1">{order.customerName || '-'}</p>
+            <p className="text-slate-500 font-medium text-[10px] mt-1.5 leading-relaxed">{order.address || '-'}</p>
           </div>
 
           <div className="py-5 border-y border-dashed border-slate-200 space-y-3">
-            {order.items.map((it, i) => (
+            {(order.items || []).map((it, i) => (
               <div key={i} className="flex justify-between items-center text-slate-600 font-bold">
                 <span>{it.name}</span>
                 <span className="font-black text-slate-900">{formatRp(it.calculatedPrice)}</span>
