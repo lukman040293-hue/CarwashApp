@@ -25,7 +25,8 @@ import {
   MapPin,
   FileText,
   Download,
-  Share2
+  Share2,
+  FileDown
 } from 'lucide-react';
 
 // --- DATA MASTER LAYANAN ---
@@ -119,7 +120,7 @@ export default function App() {
   const showConfirm = (message, onConfirm) => setDialog({ type: 'confirm', message, onConfirm });
 
   return (
-    <div className="bg-slate-50 text-slate-800 w-full min-h-[100dvh] relative overflow-x-hidden flex flex-col font-sans print:bg-white print:overflow-visible print:h-auto">
+    <div className="bg-slate-50 text-slate-800 w-full min-h-[100dvh] relative overflow-x-hidden flex flex-col font-sans">
       <style dangerouslySetInnerHTML={{__html: `
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;900&display=swap');
         html, body { font-family: 'Outfit', sans-serif; margin: 0; padding: 0; overflow-x: hidden; background-color: #f8fafc; overscroll-behavior: none !important; -webkit-tap-highlight-color: transparent; }
@@ -129,12 +130,6 @@ export default function App() {
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fadeIn { animation: fadeIn 0.3s ease-out forwards; }
-        
-        /* ATURAN KHUSUS UNTUK CETAK PDF */
-        @media print {
-          html, body, #root { overflow: visible !important; height: auto !important; background: white !important; }
-          @page { margin: 1cm; size: A4 portrait; }
-        }
       `}} />
 
       <svg width="0" height="0" className="absolute pointer-events-none">
@@ -146,8 +141,8 @@ export default function App() {
         </defs>
       </svg>
 
-      {/* HEADER SECTION (Sembunyikan saat cetak) */}
-      <div className="shrink-0 z-10 w-full print:hidden">
+      {/* HEADER SECTION */}
+      <div className="shrink-0 z-10 w-full">
         <div className="bg-[#24429A] rounded-b-[2rem] px-6 pt-8 pb-5 flex flex-col justify-center shadow-xl shadow-[#24429A]/10 text-white relative overflow-hidden">
           <div className="absolute -right-8 -top-8 w-40 h-40 bg-white/5 rounded-full blur-2xl"></div>
           <div className="absolute -left-10 -bottom-10 w-32 h-32 bg-blue-500/20 rounded-full blur-xl"></div>
@@ -163,38 +158,36 @@ export default function App() {
         </div>
       </div>
 
-      {/* CONTENT AREA (Buka overflow saat cetak agar muat banyak halaman) */}
-      <div className="flex-1 overflow-y-auto hide-scrollbar pb-32 px-5 pt-6 w-full relative print:overflow-visible print:pb-0 print:pt-0 print:px-0">
-        {activeTab === 'kasir' && <div className="print:hidden"><KasirView services={SERVICES} customServices={customServices} setCustomServices={setCustomServices} setOrders={setOrders} formatRp={formatRp} setActiveTab={setActiveTab} setActiveNota={setActiveNota} showAlert={showAlert} /></div>}
-        {activeTab === 'kalender' && <div className="print:hidden"><KalenderView orders={orders} formatRp={formatRp} setActiveNota={setActiveNota} /></div>}
-        {activeTab === 'riwayat' && <div className="print:hidden"><RiwayatView orders={orders} setOrders={setOrders} formatRp={formatRp} setActiveNota={setActiveNota} showAlert={showAlert} showConfirm={showConfirm} /></div>}
-        {activeTab === 'laporan' && <LaporanView orders={orders} formatRp={formatRp} />}
+      {/* CONTENT AREA */}
+      <div className="flex-1 overflow-y-auto hide-scrollbar pb-32 px-5 pt-6 w-full relative">
+        {activeTab === 'kasir' && <KasirView services={SERVICES} customServices={customServices} setCustomServices={setCustomServices} setOrders={setOrders} formatRp={formatRp} setActiveTab={setActiveTab} setActiveNota={setActiveNota} showAlert={showAlert} />}
+        {activeTab === 'kalender' && <KalenderView orders={orders} formatRp={formatRp} setActiveNota={setActiveNota} />}
+        {activeTab === 'riwayat' && <RiwayatView orders={orders} setOrders={setOrders} formatRp={formatRp} setActiveNota={setActiveNota} showAlert={showAlert} showConfirm={showConfirm} />}
+        {activeTab === 'laporan' && <LaporanView orders={orders} formatRp={formatRp} showAlert={showAlert} />}
       </div>
 
-      {/* NAVIGASI BAWAH (Sembunyikan saat cetak) */}
-      <div className={`fixed bottom-6 left-4 right-4 bg-[#1e3a8a] flex justify-between items-center px-2 py-2 z-50 rounded-full shadow-[0_15px_35px_-5px_rgba(30,58,138,0.5)] border border-white/10 mx-auto max-w-lg transition-transform duration-300 ease-in-out print:hidden ${isKeyboardOpen ? 'translate-y-[150%] opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'}`}>
+      {/* NAVIGASI BAWAH */}
+      <div className={`fixed bottom-6 left-4 right-4 bg-[#1e3a8a] flex justify-between items-center px-2 py-2 z-50 rounded-full shadow-[0_15px_35px_-5px_rgba(30,58,138,0.5)] border border-white/10 mx-auto max-w-lg transition-transform duration-300 ease-in-out ${isKeyboardOpen ? 'translate-y-[150%] opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'}`}>
         <NavItem icon={ClipboardList} label="Kasir" isActive={activeTab === 'kasir'} onClick={() => setActiveTab('kasir')} />
         <NavItem icon={CalendarDays} label="Jadwal" isActive={activeTab === 'kalender'} onClick={() => setActiveTab('kalender')} />
         <NavItem icon={History} label="Riwayat" isActive={activeTab === 'riwayat'} onClick={() => setActiveTab('riwayat')} />
         <NavItem icon={BarChart} label="Laporan" isActive={activeTab === 'laporan'} onClick={() => setActiveTab('laporan')} />
       </div>
 
-      {/* MODALS (Sembunyikan saat cetak) */}
-      <div className="print:hidden">
-        {activeNota && <NotaModal order={activeNota} formatRp={formatRp} onClose={() => setActiveNota(null)} showAlert={showAlert} />}
-        {dialog && (
-          <div className="fixed inset-0 bg-slate-900/60 z-[100] flex items-center justify-center p-6 backdrop-blur-sm animate-fadeIn">
-            <div className="bg-white rounded-[2.5rem] p-8 w-full max-w-xs shadow-2xl text-center border border-slate-100">
-              <div className="w-16 h-16 bg-amber-100 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-5 font-bold text-3xl shadow-inner shadow-amber-200/50">!</div>
-              <p className="text-slate-800 font-bold mb-8 text-base">{dialog.message}</p>
-              <div className="flex gap-3">
-                {dialog.type === 'confirm' && <button onClick={() => setDialog(null)} className="flex-1 py-4 rounded-2xl bg-slate-100 text-slate-600 font-bold text-sm active:bg-slate-200 transition-colors">Batal</button>}
-                <button onClick={() => { if (dialog.onConfirm) dialog.onConfirm(); setDialog(null); }} className="flex-1 py-4 rounded-2xl bg-blue-600 text-white font-bold text-sm shadow-xl shadow-blue-200 active:scale-95 transition-transform">OK</button>
-              </div>
+      {/* MODALS */}
+      {activeNota && <NotaModal order={activeNota} formatRp={formatRp} onClose={() => setActiveNota(null)} showAlert={showAlert} />}
+      {dialog && (
+        <div className="fixed inset-0 bg-slate-900/60 z-[100] flex items-center justify-center p-6 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-[2.5rem] p-8 w-full max-w-xs shadow-2xl text-center border border-slate-100">
+            <div className="w-16 h-16 bg-amber-100 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-5 font-bold text-3xl shadow-inner shadow-amber-200/50">!</div>
+            <p className="text-slate-800 font-bold mb-8 text-base">{dialog.message}</p>
+            <div className="flex gap-3">
+              {dialog.type === 'confirm' && <button onClick={() => setDialog(null)} className="flex-1 py-4 rounded-2xl bg-slate-100 text-slate-600 font-bold text-sm active:bg-slate-200 transition-colors">Batal</button>}
+              <button onClick={() => { if (dialog.onConfirm) dialog.onConfirm(); setDialog(null); }} className="flex-1 py-4 rounded-2xl bg-blue-600 text-white font-bold text-sm shadow-xl shadow-blue-200 active:scale-95 transition-transform">OK</button>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -538,9 +531,8 @@ function RiwayatView({ orders, setOrders, formatRp, setActiveNota, showConfirm }
   );
 }
 
-// --- VIEW: LAPORAN (SEKARANG DENGAN REKAP PDF BULANAN) ---
-function LaporanView({ orders, formatRp }) {
-  // State untuk filter bulan (Default: Bulan ini)
+// --- VIEW: LAPORAN ---
+function LaporanView({ orders, formatRp, showAlert }) {
   const [filterMonth, setFilterMonth] = useState(() => {
     const d = new Date();
     return `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}`;
@@ -548,64 +540,44 @@ function LaporanView({ orders, formatRp }) {
 
   const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
   
-  // Memecah "YYYY-MM" menjadi string "MM/YYYY" untuk mencocokkan data
   const [year, month] = filterMonth.split('-');
   const monthStr = month ? `${month}/${year}` : ''; 
   const displayMonthName = month ? `${monthNames[parseInt(month)-1]} ${year}` : '';
 
-  // Data Keseluruhan (All Time)
   const lunasAll = orders.filter(o => o.status === 'Lunas');
   const totalAll = lunasAll.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
 
-  // Data Khusus Bulan Terpilih
   const monthOrders = orders.filter(o => o.date && o.date.endsWith(`/${monthStr}`) && o.status === 'Lunas');
   const totalMonth = monthOrders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
 
-  const handlePrint = () => {
-    window.print();
-    setTimeout(() => {
-      alert("Catatan: Jika PDF tidak muncul, sistem HP Anda mungkin memblokir fitur cetak web. Gunakan tombol 'Excel' atau 'Bagikan' sebagai alternatif.");
-    }, 1000);
-  };
-
   const handleShareRekap = async () => {
-    const text = `*REKAP L CARWASH - ${displayMonthName}*\n\nTotal Pendapatan: ${formatRp(totalMonth)}\nUnit Selesai: ${monthOrders.length} Kendaraan\n\n_Untuk rincian detail, silakan buka aplikasi dan download file Excel/CSV._`;
+    const text = `*REKAP L CARWASH - ${displayMonthName}*\n\nTotal Pendapatan: ${formatRp(totalMonth)}\nUnit Selesai: ${monthOrders.length} Kendaraan\n\n_Silakan cek file PDF/Excel untuk rincian lengkap._`;
     if (navigator.share) {
       try {
         await navigator.share({ title: `Rekap ${displayMonthName}`, text });
       } catch (e) {}
     } else {
       navigator.clipboard.writeText(text);
-      alert('Teks rekap disalin ke clipboard!');
+      showAlert('Teks rekap disalin ke clipboard!');
     }
   };
 
   const handleDownloadCSV = () => {
-    if (monthOrders.length === 0) {
-      alert("Tidak ada data transaksi lunas untuk di-download pada bulan ini.");
-      return;
-    }
+    if (monthOrders.length === 0) return showAlert("Tidak ada data transaksi bulan ini.");
 
-    // Header CSV untuk Excel
     let csvContent = "Tanggal,Jam,ID Transaksi,Nama Pelanggan,Plat Nomor,Alamat,Layanan,Total Tagihan\n";
-    
     monthOrders.forEach(o => {
       const date = o.date || '';
       const time = o.time || '';
       const id = o.id || '';
-      // Tambahkan tanda kutip agar nama atau alamat yang mengandung koma tidak merusak tabel Excel
       const name = `"${(o.customerName || '').replace(/"/g, '""')}"`;
       const plate = o.plate || '';
       const address = `"${(o.address || '').replace(/"/g, '""')}"`;
-      
-      // Gabungkan nama-nama layanan menjadi satu baris text
       const items = `"${(o.items || []).map(i => i.name).join(', ')}"`;
       const total = o.total || 0;
-
       csvContent += `${date},${time},${id},${name},${plate},${address},${items},${total}\n`;
     });
 
-    // Proses pembuatan file CSV
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -616,123 +588,141 @@ function LaporanView({ orders, formatRp }) {
     document.body.removeChild(link);
   };
 
+  // FUNGSI BARU: GENERATE PDF LANGSUNG (TANPA PRINT WEB)
+  const handleDownloadPDF = async () => {
+    if (monthOrders.length === 0) return showAlert("Tidak ada data transaksi bulan ini untuk dijadikan PDF.");
+    
+    showAlert("Sedang mengunduh file PDF...");
+
+    try {
+      // Load library jsPDF secara dinamis
+      if (!window.jspdf) {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+          script.onload = resolve;
+          script.onerror = reject;
+          document.head.appendChild(script);
+        });
+      }
+      // Load library jsPDF-AutoTable untuk membuat tabel
+      if (!window.jspdf.jsPDF.API.autoTable) {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js';
+          script.onload = resolve;
+          script.onerror = reject;
+          document.head.appendChild(script);
+        });
+      }
+
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+
+      // Desain Header PDF
+      doc.setFontSize(16);
+      doc.setFont("helvetica", "bold");
+      doc.text("L CARWASH & DETAILING", 14, 20);
+
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.text("Laporan Rekapitulasi Pendapatan", 14, 26);
+      doc.text(`Periode: ${displayMonthName}`, 14, 32);
+
+      // Menyiapkan Data Tabel
+      const tableColumn = ["Tanggal", "ID Trx", "Pelanggan", "Plat Nomor", "Nominal"];
+      const tableRows = [];
+
+      monthOrders.forEach(order => {
+        const orderData = [
+          order.date || "-",
+          order.id || "-",
+          order.customerName || "-",
+          order.plate || "-",
+          formatRp(order.total)
+        ];
+        tableRows.push(orderData);
+      });
+
+      // Men-generate Tabel ke PDF
+      doc.autoTable({
+        startY: 40,
+        head: [tableColumn],
+        body: tableRows,
+        theme: 'grid',
+        headStyles: { fillColor: [36, 66, 154] }, // Warna biru khas L Carwash
+        foot: [["", "", "", "TOTAL", formatRp(totalMonth)]],
+        footStyles: { fillColor: [241, 245, 249], textColor: [0, 0, 0], fontStyle: 'bold' },
+        styles: { fontSize: 9 }
+      });
+
+      // Simpan & Download File PDF
+      doc.save(`Rekap_Bulanan_${displayMonthName.replace(' ', '_')}.pdf`);
+    } catch (error) {
+      alert("Gagal membuat PDF. Pastikan HP Anda terhubung ke internet saat men-download laporan.");
+    }
+  };
+
   return (
-    <>
-      {/* TAMPILAN DI LAYAR HP (Disembunyikan saat cetak PDF) */}
-      <div className="animate-fadeIn space-y-6 pb-10 print:hidden">
-        {/* Ringkasan Keseluruhan */}
-        <div className="bg-slate-900 p-8 rounded-[3rem] text-white shadow-2xl relative overflow-hidden">
-          <Wallet className="absolute -right-6 -top-6 w-40 h-40 text-white/5 rotate-12" />
-          <div className="relative z-10">
-            <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em] mb-2">Total Semua Pendapatan</p>
-            <h3 className="text-4xl font-black tracking-tighter truncate">{formatRp(totalAll)}</h3>
-            <p className="text-xs text-blue-400 font-bold mt-4">Total dari {lunasAll.length} transaksi lunas</p>
-          </div>
-        </div>
-        
-        {/* Menu Rekap & Download PDF Bulanan Baru */}
-        <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-5">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-blue-100 text-blue-600 rounded-xl"><FileText size={20}/></div>
-            <h3 className="font-black text-slate-800 text-lg">Rekap & PDF Bulanan</h3>
-          </div>
-          
-          <div className="space-y-2">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Pilih Bulan</label>
-            <input 
-              type="month" 
-              value={filterMonth} 
-              onChange={e => setFilterMonth(e.target.value)} 
-              className="w-full bg-slate-50 border border-slate-100 rounded-[1.25rem] p-4 text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500 transition-all text-slate-700"
-            />
-          </div>
-
-          <div className="bg-blue-50 rounded-3xl p-5 flex justify-between items-center border border-blue-100">
-            <div>
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Omzet {displayMonthName}</p>
-              <p className="text-xl font-black text-blue-700">{formatRp(totalMonth)}</p>
-            </div>
-            <div className="text-right border-l border-blue-200 pl-4">
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Unit Selesai</p>
-              <p className="text-xl font-black text-blue-700">{monthOrders.length}</p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-3 gap-2">
-            <button 
-              onClick={handlePrint} 
-              className="bg-slate-800 hover:bg-slate-900 text-white font-black py-3 rounded-2xl shadow-xl shadow-slate-200 active:scale-95 transition-transform flex flex-col items-center justify-center gap-1.5 text-[9px] uppercase tracking-widest"
-            >
-              <Printer size={16}/> PDF
-            </button>
-            <button 
-              onClick={handleShareRekap} 
-              className="bg-blue-600 hover:bg-blue-700 text-white font-black py-3 rounded-2xl shadow-xl shadow-blue-200 active:scale-95 transition-transform flex flex-col items-center justify-center gap-1.5 text-[9px] uppercase tracking-widest"
-            >
-              <Share2 size={16}/> Bagikan
-            </button>
-            <button 
-              onClick={handleDownloadCSV} 
-              className="bg-green-600 hover:bg-green-700 text-white font-black py-3 rounded-2xl shadow-xl shadow-green-200 active:scale-95 transition-transform flex flex-col items-center justify-center gap-1.5 text-[9px] uppercase tracking-widest"
-            >
-              <Download size={16}/> Excel/CSV
-            </button>
-          </div>
+    <div className="animate-fadeIn space-y-6 pb-10">
+      <div className="bg-slate-900 p-8 rounded-[3rem] text-white shadow-2xl relative overflow-hidden">
+        <Wallet className="absolute -right-6 -top-6 w-40 h-40 text-white/5 rotate-12" />
+        <div className="relative z-10">
+          <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em] mb-2">Total Semua Pendapatan</p>
+          <h3 className="text-4xl font-black tracking-tighter truncate">{formatRp(totalAll)}</h3>
+          <p className="text-xs text-blue-400 font-bold mt-4">Total dari {lunasAll.length} transaksi lunas</p>
         </div>
       </div>
-
-      {/* TAMPILAN KHUSUS CETAK PDF (Hanya muncul saat menekan tombol cetak) */}
-      <div className="hidden print:block w-full text-black bg-white p-2 font-sans">
-        <div className="text-center border-b-2 border-slate-800 pb-6 mb-8">
-          <h1 className="text-3xl font-black tracking-widest mb-1">L CARWASH & DETAILING</h1>
-          <p className="text-base font-bold text-slate-600 uppercase tracking-widest">Laporan Rekapitulasi Pendapatan</p>
-          <p className="text-sm font-medium text-slate-500 uppercase tracking-widest mt-2">Periode: {displayMonthName}</p>
+      
+      <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-5">
+        <div className="flex items-center gap-3 mb-2">
+          <div className="p-2 bg-blue-100 text-blue-600 rounded-xl"><FileText size={20}/></div>
+          <h3 className="font-black text-slate-800 text-lg">Cetak & Unduh Laporan</h3>
         </div>
         
-        {monthOrders.length === 0 ? (
-          <p className="text-center text-slate-500 font-bold py-10">Tidak ada transaksi lunas di bulan ini.</p>
-        ) : (
-          <table className="w-full text-sm border-collapse">
-            <thead>
-              <tr className="border-b-2 border-slate-800 text-left">
-                <th className="py-3 pr-2 uppercase text-xs tracking-wider">Tanggal</th>
-                <th className="py-3 px-2 uppercase text-xs tracking-wider">ID Trx</th>
-                <th className="py-3 px-2 uppercase text-xs tracking-wider">Pelanggan & Plat</th>
-                <th className="py-3 pl-2 text-right uppercase text-xs tracking-wider">Nominal</th>
-              </tr>
-            </thead>
-            <tbody>
-              {monthOrders.map((o, i) => (
-                <tr key={i} className="border-b border-slate-200">
-                  <td className="py-4 pr-2 whitespace-nowrap align-top">{o.date}</td>
-                  <td className="py-4 px-2 whitespace-nowrap align-top">{o.id}</td>
-                  <td className="py-4 px-2">
-                    <div className="font-bold text-base">{o.customerName}</div>
-                    <div className="text-xs text-slate-500 mt-1">{o.plate}</div>
-                    <div className="text-[10px] text-slate-400 mt-1">{o.address}</div>
-                  </td>
-                  <td className="py-4 pl-2 text-right font-black whitespace-nowrap align-top">{formatRp(o.total)}</td>
-                </tr>
-              ))}
-            </tbody>
-            <tfoot>
-              <tr className="border-t-2 border-slate-800">
-                <td colSpan="3" className="py-6 text-right font-black uppercase tracking-widest">Total Pendapatan {displayMonthName}</td>
-                <td className="py-6 text-right font-black text-xl whitespace-nowrap text-blue-700">{formatRp(totalMonth)}</td>
-              </tr>
-            </tfoot>
-          </table>
-        )}
-        
-        <div className="mt-20 flex justify-end">
-          <div className="text-center">
-            <p className="text-xs text-slate-500 mb-20">Dicetak pada: {new Date().toLocaleString('id-ID')}</p>
-            <p className="font-black uppercase tracking-widest">Admin L Carwash</p>
-            <div className="w-full h-px bg-slate-300 mt-2"></div>
+        <div className="space-y-2">
+          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Pilih Bulan</label>
+          <input 
+            type="month" 
+            value={filterMonth} 
+            onChange={e => setFilterMonth(e.target.value)} 
+            className="w-full bg-slate-50 border border-slate-100 rounded-[1.25rem] p-4 text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500 transition-all text-slate-700"
+          />
+        </div>
+
+        <div className="bg-blue-50 rounded-3xl p-5 flex justify-between items-center border border-blue-100">
+          <div>
+            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Omzet {displayMonthName}</p>
+            <p className="text-xl font-black text-blue-700">{formatRp(totalMonth)}</p>
+          </div>
+          <div className="text-right border-l border-blue-200 pl-4">
+            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Unit Selesai</p>
+            <p className="text-xl font-black text-blue-700">{monthOrders.length}</p>
           </div>
         </div>
+
+        <div className="grid grid-cols-3 gap-2">
+          <button 
+            onClick={handleDownloadPDF} 
+            className="bg-slate-800 hover:bg-slate-900 text-white font-black py-3 rounded-2xl shadow-xl shadow-slate-200 active:scale-95 transition-transform flex flex-col items-center justify-center gap-1.5 text-[9px] uppercase tracking-widest"
+          >
+            <FileDown size={16}/> Unduh PDF
+          </button>
+          <button 
+            onClick={handleShareRekap} 
+            className="bg-blue-600 hover:bg-blue-700 text-white font-black py-3 rounded-2xl shadow-xl shadow-blue-200 active:scale-95 transition-transform flex flex-col items-center justify-center gap-1.5 text-[9px] uppercase tracking-widest"
+          >
+            <Share2 size={16}/> Bagikan
+          </button>
+          <button 
+            onClick={handleDownloadCSV} 
+            className="bg-green-600 hover:bg-green-700 text-white font-black py-3 rounded-2xl shadow-xl shadow-green-200 active:scale-95 transition-transform flex flex-col items-center justify-center gap-1.5 text-[9px] uppercase tracking-widest"
+          >
+            <Download size={16}/> Excel/CSV
+          </button>
+        </div>
       </div>
-    </>
+    </div>
   );
 }
 
