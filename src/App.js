@@ -25,7 +25,8 @@ import {
   MapPin,
   FileText,
   FileDown,
-  Phone
+  Phone,
+  Share2
 } from 'lucide-react';
 
 // --- DATA MASTER LAYANAN ---
@@ -721,6 +722,19 @@ function LaporanView({ orders, formatRp, showAlert }) {
 function NotaModal({ order, formatRp, onClose, showAlert }) {
   if (!order) return null;
 
+  const handleShareNota = async () => {
+    const text = `*L CARWASH & DETAILING*\nHome Service\n\nID: ${order.id}\nTanggal: ${order.date}\n------------------------\nPelanggan: ${order.customerName}\nWA: ${order.customerPhone || '-'}\nPlat: ${order.plate}\nAlamat: ${order.address || '-'}\n------------------------\nLayanan:\n${(order.items || []).map(it => `- ${it.name}: ${formatRp(it.calculatedPrice)}`).join('\n')}\n------------------------\n*TOTAL: ${formatRp(order.total)}*\n\nTerima kasih atas kepercayaannya!`;
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: `Nota ${order.id}`, text });
+      } catch (e) {}
+    } else {
+      navigator.clipboard.writeText(text);
+      showAlert('Nota disalin ke clipboard! Silakan paste di WhatsApp.');
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-slate-900/90 z-[100] flex items-center justify-center p-5 backdrop-blur-md animate-fadeIn">
       <div className="bg-white w-full max-w-sm rounded-[3rem] overflow-hidden flex flex-col shadow-2xl">
@@ -758,9 +772,12 @@ function NotaModal({ order, formatRp, onClose, showAlert }) {
           </div>
         </div>
         
-        <div className="p-6 bg-slate-50 flex gap-3">
-          <button onClick={onClose} className="flex-1 py-4.5 rounded-2xl font-black uppercase tracking-widest bg-white border border-slate-200 text-slate-400 text-[10px] active:bg-slate-100">Tutup</button>
-          <button onClick={() => showAlert('Mencetak struk thermal...')} className="flex-1 py-4.5 rounded-2xl font-black uppercase tracking-widest bg-blue-600 text-white shadow-xl shadow-blue-200 text-[10px] flex items-center justify-center gap-2 active:scale-95 transition-transform">
+        <div className="p-6 bg-slate-50 flex gap-2">
+          <button onClick={onClose} className="flex-1 py-4 rounded-2xl font-black uppercase tracking-widest bg-white border border-slate-200 text-slate-400 text-[10px] active:bg-slate-100">Tutup</button>
+          <button onClick={handleShareNota} className="flex-1 py-4 rounded-2xl font-black uppercase tracking-widest bg-green-500 text-white shadow-xl shadow-green-200 text-[10px] flex items-center justify-center gap-1.5 active:scale-95 transition-transform">
+            <Share2 size={16}/> Share
+          </button>
+          <button onClick={() => showAlert('Mencetak struk thermal...')} className="flex-1 py-4 rounded-2xl font-black uppercase tracking-widest bg-blue-600 text-white shadow-xl shadow-blue-200 text-[10px] flex items-center justify-center gap-1.5 active:scale-95 transition-transform">
             <Printer size={16}/> Cetak
           </button>
         </div>
