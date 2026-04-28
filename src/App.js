@@ -164,27 +164,32 @@ export default function App() {
       {/* HEADER SECTION (Tema Hitam dengan Shadow Simpel) HANYA TAMPIL DI KASIR */}
       {activeTab === 'kasir' && (
         <div className="shrink-0 z-10 w-full">
-          <div className="bg-black rounded-b-[2rem] px-6 pt-8 pb-5 flex flex-col justify-center shadow-[0_4px_15px_rgba(0,0,0,0.08)] border-b border-slate-800 text-white relative overflow-hidden">
-            <div className="absolute -right-8 -top-8 w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
-            <div className="absolute -left-10 -bottom-10 w-32 h-32 bg-slate-800/50 rounded-full blur-xl"></div>
+          {/* Padding dan margin dikurangi agar lebih pendek */}
+          <div className="bg-black rounded-b-[1.5rem] px-5 pt-5 pb-4 flex flex-col justify-center shadow-[0_4px_15px_rgba(0,0,0,0.08)] border-b border-slate-800 text-white relative overflow-hidden">
+            <div className="absolute -right-8 -top-8 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
+            <div className="absolute -left-10 -bottom-10 w-24 h-24 bg-slate-800/50 rounded-full blur-xl"></div>
             <div className="flex justify-between items-center relative z-10">
               
-              <div className="flex items-center gap-4">
-                {/* AREA GAMBAR ICON / LOGO (DIPERBESAR & TANPA BORDER) */}
+              <div className="flex items-center gap-3.5">
+                {/* AREA GAMBAR ICON / LOGO (Disesuaikan ukurannya agar pas) */}
                 <img 
                   src={APP_LOGO} 
                   alt="Logo Aplikasi" 
-                  className="w-16 h-16 sm:w-20 sm:h-20 object-cover drop-shadow-xl shrink-0 rounded-xl"
+                  className="w-14 h-14 sm:w-16 sm:h-16 object-cover drop-shadow-xl shrink-0 rounded-xl"
                 />
                 
-                <div>
-                  <h1 className="text-base sm:text-lg font-black tracking-[0.1em] text-white uppercase drop-shadow-md leading-tight">{APP_NAME_LINE1}<br/>{APP_NAME_LINE2}</h1>
-                  <p className="text-xs sm:text-sm font-black tracking-[0.25em] text-yellow-200 mt-1.5 uppercase">{APP_SUBTITLE}</p>
+                <div className="flex flex-col justify-center">
+                  <h1 className="text-sm sm:text-base font-black tracking-[0.1em] text-white uppercase drop-shadow-md leading-tight">
+                    {APP_NAME_LINE1}
+                    {/* Hanya tambah enter jika APP_NAME_LINE2 ada isinya */}
+                    {APP_NAME_LINE2 && <><br/>{APP_NAME_LINE2}</>}
+                  </h1>
+                  <p className="text-[10px] sm:text-xs font-black tracking-[0.25em] text-yellow-200 mt-1 uppercase">{APP_SUBTITLE}</p>
                 </div>
               </div>
 
-              <div className="bg-white/10 p-2.5 rounded-2xl border border-white/20 backdrop-blur-md shadow-sm shrink-0">
-                <User size={20} className="text-white"/>
+              <div className="bg-white/10 p-2 rounded-xl border border-white/20 backdrop-blur-md shadow-sm shrink-0">
+                <User size={18} className="text-white"/>
               </div>
 
             </div>
@@ -193,7 +198,7 @@ export default function App() {
       )}
 
       {/* CONTENT AREA */}
-      <div className={`flex-1 overflow-y-auto hide-scrollbar ${activeTab === 'peta' ? 'px-0 pt-0 pb-32' : 'px-5'} ${activeTab === 'kasir' ? 'pb-[260px]' : (activeTab !== 'peta' ? 'pb-32' : '')} ${activeTab !== 'kasir' && activeTab !== 'peta' ? 'pt-8' : 'pt-6'} w-full relative`}>
+      <div className={`flex-1 overflow-y-auto hide-scrollbar ${activeTab === 'peta' ? 'px-0 pt-0 pb-32' : 'px-5'} ${activeTab === 'kasir' ? 'pb-[260px]' : (activeTab !== 'peta' ? 'pb-32' : '')} ${activeTab !== 'kasir' && activeTab !== 'peta' ? 'pt-8' : 'pt-5'} w-full relative`}>
         {activeTab === 'kasir' && <KasirView services={SERVICES} customServices={customServices} setCustomServices={setCustomServices} setOrders={setOrders} formatRp={formatRp} setActiveTab={setActiveTab} setActiveNota={setActiveNota} showAlert={showAlert} isKeyboardOpen={isKeyboardOpen} editingOrder={editingOrder} setEditingOrder={setEditingOrder} />}
         {activeTab === 'peta' && <PetaView orders={orders} formatRp={formatRp} setActiveNota={setActiveNota} />}
         {activeTab === 'kalender' && <KalenderView orders={orders} formatRp={formatRp} setActiveNota={setActiveNota} />}
