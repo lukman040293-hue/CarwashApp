@@ -24,7 +24,8 @@ import {
   User,
   MapPin,
   FileText,
-  FileDown
+  FileDown,
+  Phone
 } from 'lucide-react';
 
 // --- DATA MASTER LAYANAN ---
@@ -203,6 +204,7 @@ function NavItem({ icon: Icon, label, isActive, onClick }) {
 // --- VIEW: KASIR ---
 function KasirView({ services, customServices, setCustomServices, setOrders, formatRp, setActiveTab, setActiveNota, showAlert }) {
   const [customerName, setCustomerName] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
   const [address, setAddress] = useState('');
   const [plate, setPlate] = useState('');
   const [carType, setCarType] = useState('');
@@ -241,6 +243,7 @@ function KasirView({ services, customServices, setCustomServices, setOrders, for
       date: orderDate.split('-').reverse().join('/'),
       time: orderTime,
       customerName: customerName || 'Pelanggan Umum',
+      customerPhone: customerPhone || '-',
       address: address || '-', 
       plate: plate.toUpperCase(),
       carType: carType || '-',
@@ -275,6 +278,10 @@ function KasirView({ services, customServices, setCustomServices, setOrders, for
           <div className="space-y-2">
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1 flex items-center gap-1.5"><User size={12}/> Nama Pemilik</label>
             <input type="text" placeholder="Masukkan nama pelanggan..." value={customerName} onChange={e => setCustomerName(e.target.value)} className="w-full bg-slate-50 border border-slate-100 rounded-[1.25rem] p-4 text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all placeholder:text-slate-300 placeholder:font-medium"/>
+          </div>
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1 flex items-center gap-1.5"><Phone size={12}/> No. WhatsApp</label>
+            <input type="tel" placeholder="Contoh: 08123456789" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} className="w-full bg-slate-50 border border-slate-100 rounded-[1.25rem] p-4 text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all placeholder:text-slate-300 placeholder:font-medium"/>
           </div>
           <div className="space-y-2">
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1 flex items-center gap-1.5"><MapPin size={12}/> Alamat Lengkap</label>
@@ -456,7 +463,7 @@ function KalenderView({ orders, formatRp, setActiveNota }) {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-black text-slate-800 text-base truncate">{o.plate || '-'}</p>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 truncate">{o.customerName || '-'}</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 truncate">{o.customerName || '-'} • {o.customerPhone || '-'}</p>
                 <p className="text-[10px] font-medium text-slate-500 mt-1.5 flex items-start gap-1 leading-snug">
                   <MapPin size={12} className="shrink-0 text-slate-400 mt-0.5"/> 
                   <span className="line-clamp-2">{o.address || '-'}</span>
@@ -480,14 +487,15 @@ function RiwayatView({ orders, setOrders, formatRp, setActiveNota, showConfirm }
     const plate = o.plate || '';
     const id = o.id || '';
     const address = o.address || '';
-    return plate.toLowerCase().includes(s) || id.toLowerCase().includes(s) || address.toLowerCase().includes(s);
+    const phone = o.customerPhone || '';
+    return plate.toLowerCase().includes(s) || id.toLowerCase().includes(s) || address.toLowerCase().includes(s) || phone.toLowerCase().includes(s);
   });
 
   return (
     <div className="animate-fadeIn space-y-5">
       <div className="bg-white p-1 rounded-[1.5rem] border border-slate-100 shadow-sm flex items-center px-5">
         <Search size={20} className="text-slate-300"/>
-        <input type="text" placeholder="Cari Plat, ID, atau Alamat..." value={search} onChange={e => setSearch(e.target.value)} className="flex-1 p-4 text-sm font-bold outline-none bg-transparent placeholder:font-medium"/>
+        <input type="text" placeholder="Cari Plat, No. WA, ID..." value={search} onChange={e => setSearch(e.target.value)} className="flex-1 p-4 text-sm font-bold outline-none bg-transparent placeholder:font-medium"/>
       </div>
       
       <div className="space-y-5 pb-10">
@@ -498,7 +506,7 @@ function RiwayatView({ orders, setOrders, formatRp, setActiveNota, showConfirm }
               <div className="flex justify-between items-start mb-4 pl-3">
                 <div className="pr-2">
                   <h4 className="font-black text-slate-800 text-xl tracking-tight">{order.plate || '-'}</h4>
-                  <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1">{order.customerName || '-'}</p>
+                  <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1">{order.customerName || '-'} • {order.customerPhone || '-'}</p>
                   <p className="text-[10px] text-slate-500 mt-1 line-clamp-1">{order.address || '-'}</p>
                 </div>
                 <span className={`text-[10px] px-3 py-1.5 rounded-xl font-black uppercase tracking-widest shrink-0 ${order.status === 'Lunas' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>{order.status}</span>
@@ -549,7 +557,35 @@ function LaporanView({ orders, formatRp, showAlert }) {
   const monthOrders = orders.filter(o => o.date && o.date.endsWith(`/${monthStr}`) && o.status === 'Lunas');
   const totalMonth = monthOrders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
 
-  // FUNGSI BARU: GENERATE PDF LANGSUNG (TANPA PRINT WEB)
+  // Fungsi Export Data CSV/Excel Lengkap dengan Kolom No WA
+  const handleDownloadCSV = () => {
+    if (monthOrders.length === 0) return showAlert("Tidak ada data transaksi bulan ini.");
+
+    let csvContent = "Tanggal,Jam,ID Transaksi,Nama Pelanggan,No WhatsApp,Plat Nomor,Alamat,Layanan,Total Tagihan\n";
+    monthOrders.forEach(o => {
+      const date = o.date || '';
+      const time = o.time || '';
+      const id = o.id || '';
+      const name = `"${(o.customerName || '').replace(/"/g, '""')}"`;
+      const phone = `"${o.customerPhone || '-'}"`;
+      const plate = o.plate || '';
+      const address = `"${(o.address || '').replace(/"/g, '""')}"`;
+      const items = `"${(o.items || []).map(i => i.name).join(', ')}"`;
+      const total = o.total || 0;
+      csvContent += `${date},${time},${id},${name},${phone},${plate},${address},${items},${total}\n`;
+    });
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `Rekap_LCarwash_${monthStr.replace('/', '-')}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // FUNGSI BARU: GENERATE PDF LANGSUNG
   const handleDownloadPDF = async () => {
     if (monthOrders.length === 0) return showAlert("Tidak ada data transaksi bulan ini untuk dijadikan PDF.");
     
@@ -662,12 +698,18 @@ function LaporanView({ orders, formatRp, showAlert }) {
           </div>
         </div>
 
-        <div className="flex mt-2">
+        <div className="grid grid-cols-2 gap-2 mt-2">
           <button 
             onClick={handleDownloadPDF} 
             className="w-full bg-slate-800 hover:bg-slate-900 text-white font-black py-4 rounded-2xl shadow-xl shadow-slate-200 active:scale-95 transition-transform flex flex-row items-center justify-center gap-2 text-xs uppercase tracking-widest"
           >
-            <FileDown size={18}/> Unduh PDF
+            <FileDown size={18}/> PDF
+          </button>
+          <button 
+            onClick={handleDownloadCSV} 
+            className="w-full bg-green-600 hover:bg-green-700 text-white font-black py-4 rounded-2xl shadow-xl shadow-green-200 active:scale-95 transition-transform flex flex-row items-center justify-center gap-2 text-xs uppercase tracking-widest"
+          >
+            <FileDown size={18}/> Excel
           </button>
         </div>
       </div>
@@ -697,7 +739,7 @@ function NotaModal({ order, formatRp, onClose, showAlert }) {
           
           <div>
             <p className="font-black text-2xl text-slate-800 tracking-tighter">{order.plate || '-'}</p>
-            <p className="text-slate-400 font-black uppercase tracking-widest text-[10px] mt-1">{order.customerName || '-'}</p>
+            <p className="text-slate-400 font-black uppercase tracking-widest text-[10px] mt-1">{order.customerName || '-'} | {order.customerPhone || '-'}</p>
             <p className="text-slate-500 font-medium text-[10px] mt-1.5 leading-relaxed">{order.address || '-'}</p>
           </div>
 
