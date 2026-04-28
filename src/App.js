@@ -176,9 +176,9 @@ export default function App() {
         </div>
       )}
 
-      {/* CONTENT AREA */}
-      <div className={`flex-1 overflow-y-auto hide-scrollbar pb-32 px-5 ${activeTab !== 'kasir' ? 'pt-8' : 'pt-6'} w-full relative`}>
-        {activeTab === 'kasir' && <KasirView services={SERVICES} customServices={customServices} setCustomServices={setCustomServices} setOrders={setOrders} formatRp={formatRp} setActiveTab={setActiveTab} setActiveNota={setActiveNota} showAlert={showAlert} />}
+      {/* CONTENT AREA (Padding bawah ditambahkan lebih besar agar list terakhir tidak terhalang) */}
+      <div className={`flex-1 overflow-y-auto hide-scrollbar px-5 ${activeTab === 'kasir' ? 'pb-48' : 'pb-32'} ${activeTab !== 'kasir' ? 'pt-8' : 'pt-6'} w-full relative`}>
+        {activeTab === 'kasir' && <KasirView services={SERVICES} customServices={customServices} setCustomServices={setCustomServices} setOrders={setOrders} formatRp={formatRp} setActiveTab={setActiveTab} setActiveNota={setActiveNota} showAlert={showAlert} isKeyboardOpen={isKeyboardOpen} />}
         {activeTab === 'kalender' && <KalenderView orders={orders} formatRp={formatRp} setActiveNota={setActiveNota} />}
         {activeTab === 'riwayat' && <RiwayatView orders={orders} setOrders={setOrders} formatRp={formatRp} setActiveNota={setActiveNota} showAlert={showAlert} showConfirm={showConfirm} />}
         {activeTab === 'laporan' && <LaporanView orders={orders} formatRp={formatRp} showAlert={showAlert} />}
@@ -220,7 +220,7 @@ function NavItem({ icon, label, isActive, onClick }) {
 }
 
 // --- VIEW: KASIR ---
-function KasirView({ services, customServices, setCustomServices, setOrders, formatRp, setActiveTab, setActiveNota, showAlert }) {
+function KasirView({ services, customServices, setCustomServices, setOrders, formatRp, setActiveTab, setActiveNota, showAlert, isKeyboardOpen }) {
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [address, setAddress] = useState('');
@@ -409,8 +409,8 @@ function KasirView({ services, customServices, setCustomServices, setOrders, for
         )}
       </div>
 
-      {/* BOX TOTAL HARGA */}
-      <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 flex justify-between items-center w-full mt-6 mb-8">
+      {/* BOX TOTAL HARGA - DIBUAT STICKY/FIXED MENGAMBANG DI ATAS NAVIGASI BAWAH */}
+      <div className={`fixed bottom-[88px] left-4 right-4 mx-auto max-w-lg bg-white p-5 rounded-[2rem] shadow-[0_0px_40px_-10px_rgba(0,0,0,0.15)] border border-slate-100 flex justify-between items-center z-40 transition-all duration-300 ease-in-out ${isKeyboardOpen ? 'translate-y-[150%] opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'}`}>
         <div className="flex-1 min-w-0 pr-4">
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Total Tagihan</p>
           <p className="text-2xl font-black text-orange-600 leading-none tracking-tight truncate">{formatRp(currentTotal)}</p>
@@ -419,6 +419,7 @@ function KasirView({ services, customServices, setCustomServices, setOrders, for
           Simpan <CheckCircle size={20}/>
         </button>
       </div>
+      
     </div>
   );
 }
@@ -773,11 +774,13 @@ function NotaModal({ order, formatRp, onClose, showAlert }) {
   };
 
   const handleDownloadImage = () => {
+    // Solusi anti-crash: Instruksi khusus untuk HP Android Webview
     showAlert('TIPS MENYIMPAN: Tekan dan Tahan (Long Press) pada gambar nota dengan agak kuat, lalu pilih menu "Simpan Gambar" / "Download Image" dari HP Anda.');
   };
 
   const handleSendWA = () => {
     const waUrl = `https://wa.me/?text=${encodeURIComponent(textWaData)}`;
+    // Solusi anti-crash: ganti tab saat ini alih-alih membuka window popup baru
     window.location.href = waUrl; 
   };
 
