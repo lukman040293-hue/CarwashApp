@@ -720,6 +720,8 @@ function LaporanView({ orders, formatRp, showAlert }) {
 
 // --- KOMPONEN MODAL NOTA (CETAK) ---
 function NotaModal({ order, formatRp, onClose, showAlert }) {
+  const [capturedImage, setCapturedImage] = useState(null);
+
   if (!order) return null;
 
   const handleShareNota = async () => {
@@ -758,22 +760,18 @@ function NotaModal({ order, formatRp, onClose, showAlert }) {
           files: [file] // Lampirkan file gambar
         };
 
-        // 5. Coba bagikan langsung (Support di Android/iOS)
+        // 5. Coba bagikan langsung (Support di Browser/Beberapa HP)
         if (navigator.canShare && navigator.canShare(shareData)) {
           try {
             await navigator.share(shareData);
           } catch (err) {
-            console.log("Share dibatalkan pengguna");
+            // Jika user batal share atau gagal, tampilkan mode tahan gambar
+            setCapturedImage(canvas.toDataURL('image/jpeg', 0.9));
           }
         } else {
-          // Fallback: Jika HP tidak mendukung share file, otomatis download gambarnya
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `Nota_${order.id}.jpg`;
-          a.click();
-          URL.revokeObjectURL(url);
-          showAlert('Perangkat tidak mendukung share gambar langsung. Nota berhasil diunduh/disimpan ke HP Anda.');
+          // FALLBACK: Jika HP (APK/Webview) memblokir fitur Share File otomatis,
+          // Tampilkan gambar ke layar agar bisa di-TEKAN & TAHAN oleh user.
+          setCapturedImage(canvas.toDataURL('image/jpeg', 0.9));
         }
       }, 'image/jpeg', 0.9);
 
@@ -787,53 +785,70 @@ function NotaModal({ order, formatRp, onClose, showAlert }) {
     <div className="fixed inset-0 bg-slate-900/90 z-[100] flex items-center justify-center p-5 backdrop-blur-md animate-fadeIn">
       <div className="bg-white w-full max-w-sm rounded-[3rem] overflow-hidden flex flex-col shadow-2xl">
         
-        {/* AREA YANG AKAN DIFOTO/SCREENSHOT (ID: nota-capture-area) */}
-        <div id="nota-capture-area" className="bg-white">
-          <div className="bg-slate-50 p-8 text-center relative border-b border-dashed border-slate-200">
-            <button onClick={onClose} className="absolute right-6 top-6 text-slate-400 hover:text-slate-600 print:hidden"><X size={24}/></button>
-            <div className="w-16 h-16 bg-blue-600 text-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-xl shadow-blue-200"><Receipt size={32}/></div>
-            <h2 className="font-black text-slate-800 text-xl tracking-tighter">L CARWASH</h2>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Home Service</p>
+        {/* Jika gambar sudah jadi dan HP perlu mode manual, tampilkan ini */}
+        {capturedImage ? (
+          <div className="flex flex-col h-full max-h-[85vh]">
+            <div className="p-5 bg-amber-50 border-b border-amber-200 text-center shrink-0">
+              <p className="text-amber-800 font-bold text-xs leading-snug">⚠️ Mode Bagikan Manual</p>
+              <p className="text-amber-700 text-[10px] mt-1 font-medium"><b>Tekan & Tahan (Long Press)</b> gambar di bawah ini, lalu pilih <b>"Bagikan Gambar"</b> (ke WA) atau <b>"Simpan"</b> (ke Galeri).</p>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4 bg-slate-200 flex justify-center items-start">
+              <img src={capturedImage} alt="Nota" className="max-w-full h-auto rounded-xl shadow-md border border-slate-300" />
+            </div>
+            <div className="p-5 bg-white shrink-0">
+              <button onClick={() => setCapturedImage(null)} className="w-full py-4 rounded-2xl font-black uppercase tracking-widest bg-slate-100 text-slate-500 text-xs active:bg-slate-200">Kembali ke Nota</button>
+            </div>
           </div>
-          
-          <div className="p-8 text-xs space-y-6">
-            <div className="flex justify-between border-b border-dashed border-slate-100 pb-4">
-               <span className="font-black text-slate-400 uppercase tracking-widest">{order.date || '-'}</span>
-               <span className="font-black text-blue-600 tracking-widest">{order.id || '-'}</span>
+        ) : (
+          /* Tampilan Nota Asli (Akan disembunyikan jika gambar berhasil dibuat) */
+          <>
+            <div id="nota-capture-area" className="bg-white">
+              <div className="bg-slate-50 p-8 text-center relative border-b border-dashed border-slate-200">
+                <button onClick={onClose} className="absolute right-6 top-6 text-slate-400 hover:text-slate-600 print:hidden"><X size={24}/></button>
+                <div className="w-16 h-16 bg-blue-600 text-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-xl shadow-blue-200"><Receipt size={32}/></div>
+                <h2 className="font-black text-slate-800 text-xl tracking-tighter">L CARWASH</h2>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Home Service</p>
+              </div>
+              
+              <div className="p-8 text-xs space-y-6">
+                <div className="flex justify-between border-b border-dashed border-slate-100 pb-4">
+                   <span className="font-black text-slate-400 uppercase tracking-widest">{order.date || '-'}</span>
+                   <span className="font-black text-blue-600 tracking-widest">{order.id || '-'}</span>
+                </div>
+                
+                <div>
+                  <p className="font-black text-2xl text-slate-800 tracking-tighter">{order.plate || '-'}</p>
+                  <p className="text-slate-400 font-black uppercase tracking-widest text-[10px] mt-1">{order.customerName || '-'} | {order.customerPhone || '-'}</p>
+                  <p className="text-slate-500 font-medium text-[10px] mt-1.5 leading-relaxed">{order.address || '-'}</p>
+                </div>
+
+                <div className="py-5 border-y border-dashed border-slate-200 space-y-3">
+                  {(order.items || []).map((it, i) => (
+                    <div key={i} className="flex justify-between items-center text-slate-600 font-bold">
+                      <span>{it.name}</span>
+                      <span className="font-black text-slate-900">{formatRp(it.calculatedPrice)}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex justify-between items-center text-2xl font-black pt-2 pb-2">
+                  <span className="text-slate-800 tracking-tighter">TOTAL</span>
+                  <span className="text-blue-600 truncate max-w-[60%] text-right">{formatRp(order.total)}</span>
+                </div>
+              </div>
             </div>
             
-            <div>
-              <p className="font-black text-2xl text-slate-800 tracking-tighter">{order.plate || '-'}</p>
-              <p className="text-slate-400 font-black uppercase tracking-widest text-[10px] mt-1">{order.customerName || '-'} | {order.customerPhone || '-'}</p>
-              <p className="text-slate-500 font-medium text-[10px] mt-1.5 leading-relaxed">{order.address || '-'}</p>
+            <div className="p-6 bg-slate-50 flex gap-2 border-t border-slate-100">
+              <button onClick={onClose} className="flex-1 py-4 rounded-2xl font-black uppercase tracking-widest bg-white border border-slate-200 text-slate-400 text-[10px] active:bg-slate-100">Tutup</button>
+              <button onClick={handleShareNota} className="flex-1 py-4 rounded-2xl font-black uppercase tracking-widest bg-green-500 text-white shadow-xl shadow-green-200 text-[10px] flex items-center justify-center gap-1.5 active:scale-95 transition-transform">
+                <Share2 size={16}/> Share
+              </button>
+              <button onClick={() => showAlert('Mencetak struk thermal...')} className="flex-1 py-4 rounded-2xl font-black uppercase tracking-widest bg-blue-600 text-white shadow-xl shadow-blue-200 text-[10px] flex items-center justify-center gap-1.5 active:scale-95 transition-transform">
+                <Printer size={16}/> Cetak
+              </button>
             </div>
-
-            <div className="py-5 border-y border-dashed border-slate-200 space-y-3">
-              {(order.items || []).map((it, i) => (
-                <div key={i} className="flex justify-between items-center text-slate-600 font-bold">
-                  <span>{it.name}</span>
-                  <span className="font-black text-slate-900">{formatRp(it.calculatedPrice)}</span>
-                </div>
-              ))}
-            </div>
-
-            <div className="flex justify-between items-center text-2xl font-black pt-2 pb-2">
-              <span className="text-slate-800 tracking-tighter">TOTAL</span>
-              <span className="text-blue-600 truncate max-w-[60%] text-right">{formatRp(order.total)}</span>
-            </div>
-          </div>
-        </div>
-        {/* AKHIR AREA FOTO */}
-        
-        <div className="p-6 bg-slate-50 flex gap-2 border-t border-slate-100">
-          <button onClick={onClose} className="flex-1 py-4 rounded-2xl font-black uppercase tracking-widest bg-white border border-slate-200 text-slate-400 text-[10px] active:bg-slate-100">Tutup</button>
-          <button onClick={handleShareNota} className="flex-1 py-4 rounded-2xl font-black uppercase tracking-widest bg-green-500 text-white shadow-xl shadow-green-200 text-[10px] flex items-center justify-center gap-1.5 active:scale-95 transition-transform">
-            <Share2 size={16}/> Share
-          </button>
-          <button onClick={() => showAlert('Mencetak struk thermal...')} className="flex-1 py-4 rounded-2xl font-black uppercase tracking-widest bg-blue-600 text-white shadow-xl shadow-blue-200 text-[10px] flex items-center justify-center gap-1.5 active:scale-95 transition-transform">
-            <Printer size={16}/> Cetak
-          </button>
-        </div>
+          </>
+        )}
       </div>
     </div>
   );
