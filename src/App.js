@@ -24,7 +24,9 @@ import {
   Share2,
   Download,
   Edit,
-  Star
+  Star,
+  Map,
+  Navigation
 } from 'lucide-react';
 
 // --- DATA MASTER LAYANAN (Diperbarui dengan Foto Asli) ---
@@ -171,40 +173,40 @@ export default function App() {
         </div>
       )}
 
-      {/* CONTENT AREA (Padding ekstra besar di bawah khusus untuk Kasir agar konten bisa digulir mentok ke atas dock) */}
-      <div className={`flex-1 overflow-y-auto hide-scrollbar px-5 ${activeTab === 'kasir' ? 'pb-[260px]' : 'pb-32'} ${activeTab !== 'kasir' ? 'pt-8' : 'pt-6'} w-full relative`}>
+      {/* CONTENT AREA */}
+      <div className={`flex-1 overflow-y-auto hide-scrollbar ${activeTab === 'peta' ? 'px-0 pt-0 pb-32' : 'px-5'} ${activeTab === 'kasir' ? 'pb-[260px]' : (activeTab !== 'peta' ? 'pb-32' : '')} ${activeTab !== 'kasir' && activeTab !== 'peta' ? 'pt-8' : 'pt-6'} w-full relative`}>
         {activeTab === 'kasir' && <KasirView services={SERVICES} customServices={customServices} setCustomServices={setCustomServices} setOrders={setOrders} formatRp={formatRp} setActiveTab={setActiveTab} setActiveNota={setActiveNota} showAlert={showAlert} isKeyboardOpen={isKeyboardOpen} editingOrder={editingOrder} setEditingOrder={setEditingOrder} />}
+        {activeTab === 'peta' && <PetaView orders={orders} formatRp={formatRp} setActiveNota={setActiveNota} />}
         {activeTab === 'kalender' && <KalenderView orders={orders} formatRp={formatRp} setActiveNota={setActiveNota} />}
         {activeTab === 'riwayat' && <RiwayatView orders={orders} setOrders={setOrders} formatRp={formatRp} setActiveNota={setActiveNota} showAlert={showAlert} showConfirm={showConfirm} setEditingOrder={setEditingOrder} setActiveTab={setActiveTab} />}
         {activeTab === 'laporan' && <LaporanView orders={orders} formatRp={formatRp} showAlert={showAlert} />}
       </div>
 
-      {/* STRUKTUR DOCK MENYATU (Total Harga & Navigasi diikat dalam satu div Absolute Bawah) */}
-      <div className={`fixed bottom-0 left-0 right-0 w-full z-[60] px-4 pb-6 transition-transform duration-300 ease-in-out pointer-events-none ${isKeyboardOpen ? 'translate-y-[150%] opacity-0' : 'translate-y-0 opacity-100'}`}>
+      {/* STRUKTUR DOCK MENYATU */}
+      <div className={`fixed bottom-0 left-0 right-0 w-full z-[60] px-3 pb-6 transition-transform duration-300 ease-in-out pointer-events-none ${isKeyboardOpen ? 'translate-y-[150%] opacity-0' : 'translate-y-0 opacity-100'}`}>
         
-        {/* TOTAL HARGA DOCK (Hanya muncul jika di tab kasir, diletakkan tepat di atas navigasi tanpa jarak) */}
+        {/* TOTAL HARGA DOCK (Hanya muncul jika di tab kasir) */}
         {activeTab === 'kasir' && (
           <div className="mx-auto max-w-lg bg-white pt-5 px-5 pb-[4.5rem] -mb-[3.5rem] rounded-t-[2.5rem] rounded-b-[2rem] shadow-[0_-15px_40px_-15px_rgba(0,0,0,0.15)] border border-slate-100 flex justify-between items-center pointer-events-auto relative">
             <div className="flex-1 min-w-0 pr-4">
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Total Tagihan</p>
               <p className="text-2xl font-black text-orange-600 leading-none tracking-tight truncate">
-                {/* Menghitung total dinamis berdasarkan orderan yang belum tersimpan */}
                 <KasirTotalCalculator formatRp={formatRp} />
               </p>
             </div>
-            {/* Tombol trigger event klik dengan ID */}
             <button 
               onClick={() => document.getElementById('btn-simpan-kasir')?.click()} 
-              className="shrink-0 bg-[#f97316] hover:bg-orange-600 text-white font-black px-8 py-4 rounded-2xl shadow-xl shadow-orange-200 active:scale-95 transition-transform flex items-center justify-center gap-2"
+              className="shrink-0 bg-[#f97316] hover:bg-orange-600 text-white font-black px-6 sm:px-8 py-4 rounded-2xl shadow-xl shadow-orange-200 active:scale-95 transition-transform flex items-center justify-center gap-2"
             >
               {editingOrder ? 'Perbarui' : 'Simpan'} <CheckCircle size={20}/>
             </button>
           </div>
         )}
 
-        {/* NAVIGASI BAWAH */}
-        <div className="mx-auto max-w-lg bg-[#f97316] flex justify-between items-center px-2 py-2 rounded-[2rem] shadow-lg pointer-events-auto relative z-[61]">
+        {/* NAVIGASI BAWAH (Disesuaikan agar muat 5 icon) */}
+        <div className="mx-auto max-w-lg bg-[#f97316] flex justify-between items-center px-1.5 py-2 rounded-[2rem] shadow-lg pointer-events-auto relative z-[61]">
           <NavItem icon={<ClipboardList />} label="Kasir" isActive={activeTab === 'kasir'} onClick={() => setActiveTab('kasir')} />
+          <NavItem icon={<Map />} label="Peta" isActive={activeTab === 'peta'} onClick={() => setActiveTab('peta')} />
           <NavItem icon={<CalendarDays />} label="Jadwal" isActive={activeTab === 'kalender'} onClick={() => setActiveTab('kalender')} />
           <NavItem icon={<History />} label="Riwayat" isActive={activeTab === 'riwayat'} onClick={() => setActiveTab('riwayat')} />
           <NavItem icon={<BarChart />} label="Laporan" isActive={activeTab === 'laporan'} onClick={() => setActiveTab('laporan')} />
@@ -230,11 +232,9 @@ export default function App() {
   );
 }
 
-// Komponen Pembantu untuk Menghitung Total Real-time pada Dock Global
 function KasirTotalCalculator({ formatRp }) {
   const [total, setTotal] = useState(0);
   
-  // Sinkronisasi dengan localStorage yang di-update oleh KasirView
   useEffect(() => {
     const handleStorageChange = () => {
       try {
@@ -244,7 +244,6 @@ function KasirTotalCalculator({ formatRp }) {
       } catch(e) {}
     };
     
-    // Mendaftarkan event custom untuk update total secara real-time
     window.addEventListener('updateTotalKasir', handleStorageChange);
     handleStorageChange();
     
@@ -254,13 +253,98 @@ function KasirTotalCalculator({ formatRp }) {
   return <>{formatRp(total)}</>;
 }
 
-
+// Menyesuaikan ukuran tombol agar 5 tab muat dengan sempurna di layar HP
 function NavItem({ icon, label, isActive, onClick }) {
   return (
-    <button onClick={onClick} className={`flex items-center justify-center transition-all duration-300 ${isActive ? 'bg-white text-[#f97316] px-6 py-3 rounded-2xl font-black shadow-lg scale-105' : 'text-white/70 p-3 hover:text-white active:scale-95'}`}>
-      {React.cloneElement(icon, { size: 22, strokeWidth: isActive ? 2.5 : 2 })}
-      {isActive && <span className="ml-2 text-xs tracking-tight">{label}</span>}
+    <button onClick={onClick} className={`flex items-center justify-center transition-all duration-300 ${isActive ? 'bg-white text-[#f97316] px-3.5 sm:px-5 py-3 rounded-2xl font-black shadow-lg scale-105' : 'text-white/70 p-2.5 hover:text-white active:scale-95'}`}>
+      {React.cloneElement(icon, { size: 20, strokeWidth: isActive ? 2.5 : 2 })}
+      {isActive && <span className="ml-1.5 text-[10px] sm:text-xs tracking-tight">{label}</span>}
     </button>
+  );
+}
+
+// --- VIEW: PETA (HALAMAN BARU KHUSUS PETA) ---
+function PetaView({ orders, formatRp, setActiveNota }) {
+  // Hanya ambil pesanan yang belum lunas sebagai target kunjungan hari ini
+  const pendingOrders = orders.filter(o => o.status !== 'Lunas');
+  
+  // Default lokasi ke pesanan pertama, atau jika tidak ada ke titik acak umum
+  const [selectedAddress, setSelectedAddress] = useState(
+    pendingOrders.length > 0 && pendingOrders[0].address && pendingOrders[0].address !== '-' 
+      ? pendingOrders[0].address 
+      : 'Indonesia'
+  );
+
+  return (
+    <div className="animate-fadeIn h-full flex flex-col relative w-full">
+      {/* AREA MAPS BESAR DI ATAS */}
+      <div className="w-full h-[45vh] bg-slate-200 shrink-0 relative z-10 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.1)] rounded-b-[2rem] overflow-hidden">
+        <iframe 
+          width="100%" 
+          height="100%" 
+          style={{ border: 0 }} 
+          loading="lazy" 
+          allowFullScreen 
+          title="Peta Lokasi"
+          src={`https://maps.google.com/maps?q=${encodeURIComponent(selectedAddress)}&t=&z=15&ie=UTF8&iwloc=&output=embed`}
+        ></iframe>
+        
+        {/* Tombol pintasan untuk langsung buka Google Maps asli */}
+        <button 
+          onClick={() => window.open(`https://maps.google.com/?q=${encodeURIComponent(selectedAddress)}`, '_blank')}
+          className="absolute bottom-5 right-5 bg-white text-[#f97316] font-black text-[10px] uppercase tracking-widest px-4 py-3 rounded-xl shadow-lg border border-slate-100 flex items-center gap-1.5 active:scale-95 transition-transform"
+        >
+          <Navigation size={14} /> Navigasi Rute
+        </button>
+      </div>
+
+      {/* AREA DAFTAR PELANGGAN DI BAWAHNYA */}
+      <div className="flex-1 overflow-y-auto px-5 pt-8 pb-32 space-y-4">
+        <div className="flex justify-between items-center mb-2">
+          <h3 className="font-black text-sm text-slate-800 flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-[#f97316]"></div>
+            Lokasi Panggilan (Belum Lunas)
+          </h3>
+          <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-lg">{pendingOrders.length} Titik</span>
+        </div>
+
+        {pendingOrders.length === 0 ? (
+          <div className="bg-white/50 border-2 border-dashed border-slate-200 rounded-[2rem] p-10 text-center">
+            <Map className="mx-auto text-slate-300 mb-3" size={40}/>
+            <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em]">Semua Kunjungan Selesai</p>
+          </div>
+        ) : (
+          pendingOrders.map(o => {
+            const isActive = selectedAddress === o.address;
+            return (
+              <div 
+                key={o.id} 
+                onClick={() => {
+                  if (o.address && o.address !== '-') setSelectedAddress(o.address);
+                }}
+                className={`p-5 rounded-[1.5rem] border-2 transition-all flex flex-col relative cursor-pointer active:scale-[0.98] ${isActive ? 'border-orange-500 bg-orange-50 shadow-md' : 'bg-white border-slate-100 shadow-sm hover:border-slate-200'}`}
+              >
+                <div className="flex justify-between items-start mb-2">
+                  <div className="pr-2">
+                    <h4 className="font-black text-slate-800 text-base tracking-tight">{o.customerName || '-'}</h4>
+                    <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest mt-0.5">{o.plate || '-'}</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-[10px] font-black text-orange-600 mb-0.5">{(o.date || '').substring(0, 5)}</p>
+                    <p className="text-sm font-black text-slate-700">{o.time || '-'}</p>
+                  </div>
+                </div>
+
+                <p className="text-[10px] font-medium text-slate-500 flex items-start gap-1 leading-snug mt-1">
+                  <MapPin size={12} className={`shrink-0 mt-0.5 ${isActive ? 'text-orange-500' : 'text-slate-400'}`}/> 
+                  <span className="line-clamp-2">{o.address || '-'}</span>
+                </p>
+              </div>
+            );
+          })
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -415,10 +499,12 @@ function KasirView({ services, customServices, setCustomServices, setOrders, for
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1 flex items-center gap-1.5"><Phone size={12}/> No. WhatsApp</label>
             <input type="tel" placeholder="Contoh: 08123456789" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} className="w-full bg-slate-50 border border-slate-100 rounded-[1.25rem] p-4 text-base font-bold outline-none focus:ring-2 focus:ring-orange-500 focus:bg-white transition-all placeholder:text-slate-300 placeholder:font-medium"/>
           </div>
+          
           <div className="space-y-2">
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1 flex items-center gap-1.5"><MapPin size={12}/> Alamat Lengkap</label>
             <textarea placeholder="Masukkan alamat lokasi pelanggan..." value={address} onChange={e => setAddress(e.target.value)} rows="3" className="w-full bg-slate-50 border border-slate-100 rounded-[1.25rem] p-4 text-base font-bold outline-none focus:ring-2 focus:ring-orange-500 focus:bg-white transition-all placeholder:text-slate-300 placeholder:font-medium resize-none"></textarea>
           </div>
+
           <div className="space-y-2">
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Tipe Mobil</label>
             <input type="text" placeholder="Contoh: Pajero Sport, Avanza" value={carType} onChange={e => setCarType(e.target.value)} className="w-full bg-slate-50 border border-slate-100 rounded-[1.25rem] p-4 text-base font-bold outline-none focus:ring-2 focus:ring-orange-500 focus:bg-white transition-all placeholder:text-slate-300 placeholder:font-medium"/>
@@ -450,14 +536,14 @@ function KasirView({ services, customServices, setCustomServices, setOrders, for
                     
                     {isSelected && <div className="absolute top-4 right-4 bg-[#f97316] text-white rounded-full p-1.5 shadow-sm z-20"><CheckCircle size={22}/></div>}
                     
-                    <div className="flex flex-row items-stretch min-h-[140px]"> {/* Tinggi Min Ditingkatkan dari 110 ke 140 */}
+                    <div className="flex flex-row items-stretch min-h-[140px]">
                       
                       {/* AREA KIRI: THUMBNAIL (DILEBARKAN) */}
                       <div className="w-[130px] sm:w-[150px] shrink-0 relative bg-slate-100 border-r border-slate-100">
                         <img src={itemImage} alt={item.name} className="absolute inset-0 w-full h-full object-cover" />
                       </div>
 
-                      {/* AREA KANAN: KONTEN (FONT DIPERBESAR) */}
+                      {/* AREA KANAN: KONTEN */}
                       <div className="flex-1 min-w-0 p-4 sm:p-5 pr-14 flex flex-col justify-center">
                         
                         {/* LABEL REKOMENDASI 5 BINTANG */}
@@ -651,9 +737,14 @@ function KalenderView({ orders, formatRp, setActiveNota }) {
               <div className="flex-1 min-w-0">
                 <p className="font-black text-slate-800 text-base truncate">{o.plate || '-'}</p>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 truncate">{o.customerName || '-'} • {o.customerPhone || '-'}</p>
-                <p className="text-[10px] font-medium text-slate-500 mt-1.5 flex items-start gap-1 leading-snug">
+                
+                {/* ALAMAT BISA DIKLIK UNTUK BUKA GOOGLE MAPS */}
+                <p 
+                  onClick={(e) => { e.stopPropagation(); if(o.address && o.address !== '-') window.open(`https://maps.google.com/?q=${encodeURIComponent(o.address)}`, '_blank'); }}
+                  className="text-[10px] font-medium text-slate-500 mt-1.5 flex items-start gap-1 leading-snug cursor-pointer hover:text-orange-500"
+                >
                   <MapPin size={12} className="shrink-0 text-slate-400 mt-0.5"/> 
-                  <span className="line-clamp-2">{o.address || '-'}</span>
+                  <span className="line-clamp-2 underline decoration-dashed underline-offset-2">{o.address || '-'}</span>
                 </p>
               </div>
               <button onClick={() => setActiveNota(o)} className="p-3.5 bg-slate-50 hover:bg-orange-50 text-slate-400 hover:text-orange-600 rounded-2xl transition-colors"><Printer size={20}/></button>
@@ -694,7 +785,14 @@ function RiwayatView({ orders, setOrders, formatRp, setActiveNota, showConfirm, 
                 <div className="pr-2">
                   <h4 className="font-black text-slate-800 text-xl tracking-tight">{order.plate || '-'}</h4>
                   <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1">{order.customerName || '-'} • {order.customerPhone || '-'}</p>
-                  <p className="text-[10px] text-slate-500 mt-1 line-clamp-1">{order.address || '-'}</p>
+                  
+                  {/* ALAMAT BISA DIKLIK UNTUK BUKA GOOGLE MAPS */}
+                  <p 
+                    onClick={(e) => { e.stopPropagation(); if(order.address && order.address !== '-') window.open(`https://maps.google.com/?q=${encodeURIComponent(order.address)}`, '_blank'); }}
+                    className="text-[10px] text-slate-500 mt-1 line-clamp-1 cursor-pointer hover:text-orange-500 flex items-center gap-1"
+                  >
+                    <MapPin size={10} className="shrink-0"/> <span className="underline decoration-dashed underline-offset-2">{order.address || '-'}</span>
+                  </p>
                 </div>
                 <span className={`text-[10px] px-3 py-1.5 rounded-xl font-black uppercase tracking-widest shrink-0 ${order.status === 'Lunas' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>{order.status}</span>
               </div>
@@ -960,7 +1058,14 @@ function NotaModal({ order, formatRp, onClose, showAlert }) {
                 <div>
                   <p className="font-black text-2xl text-slate-800 tracking-tighter">{order.plate || '-'}</p>
                   <p className="text-slate-400 font-black uppercase tracking-widest text-[10px] mt-1">{order.customerName || '-'} | {order.customerPhone || '-'}</p>
-                  <p className="text-slate-500 font-medium text-[10px] mt-1.5 leading-relaxed">{order.address || '-'}</p>
+                  
+                  {/* ALAMAT DI NOTA BISA DIKLIK UNTUK BUKA GOOGLE MAPS */}
+                  <p 
+                    onClick={() => { if(order.address && order.address !== '-') window.open(`https://maps.google.com/?q=${encodeURIComponent(order.address)}`, '_blank'); }}
+                    className="text-slate-500 font-medium text-[10px] mt-1.5 leading-relaxed flex items-start gap-1 cursor-pointer hover:text-orange-500"
+                  >
+                     <MapPin size={12} className="shrink-0" /> <span className="underline decoration-dashed underline-offset-2">{order.address || '-'}</span>
+                  </p>
                 </div>
 
                 <div className="py-5 border-y border-dashed border-slate-200 space-y-3">
