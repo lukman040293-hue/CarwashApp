@@ -128,21 +128,11 @@ export default function App() {
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;900&display=swap');
         html, body { font-family: 'Outfit', sans-serif; margin: 0; padding: 0; overflow-x: hidden; background-color: #f8fafc; overscroll-behavior: none !important; -webkit-tap-highlight-color: transparent; }
         #root { width: 100%; height: 100%; }
-        .icon-yellow-grad svg { stroke: url(#yellow-gradient) !important; }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fadeIn { animation: fadeIn 0.3s ease-out forwards; }
       `}} />
-
-      <svg width="0" height="0" className="absolute pointer-events-none">
-        <defs>
-          <linearGradient id="yellow-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#fbbf24" />
-            <stop offset="100%" stopColor="#ea580c" />
-          </linearGradient>
-        </defs>
-      </svg>
 
       {/* HEADER SECTION (Tema Oranye) HANYA TAMPIL DI KASIR */}
       {activeTab === 'kasir' && (
@@ -176,20 +166,45 @@ export default function App() {
         </div>
       )}
 
-      {/* CONTENT AREA (Padding bawah ditambahkan lebih besar agar list terakhir tidak terhalang) */}
-      <div className={`flex-1 overflow-y-auto hide-scrollbar px-5 ${activeTab === 'kasir' ? 'pb-[180px]' : 'pb-32'} ${activeTab !== 'kasir' ? 'pt-8' : 'pt-6'} w-full relative`}>
-        {activeTab === 'kasir' && <KasirView services={SERVICES} customServices={customServices} setCustomServices={setCustomServices} setOrders={setOrders} formatRp={formatRp} setActiveTab={setActiveTab} setActiveNota={setActiveNota} showAlert={showAlert} isKeyboardOpen={isKeyboardOpen} />}
+      {/* CONTENT AREA (Padding ekstra besar di bawah khusus untuk Kasir agar konten bisa digulir mentok ke atas dock) */}
+      <div className={`flex-1 overflow-y-auto hide-scrollbar px-5 ${activeTab === 'kasir' ? 'pb-[260px]' : 'pb-32'} ${activeTab !== 'kasir' ? 'pt-8' : 'pt-6'} w-full relative`}>
+        {activeTab === 'kasir' && <KasirView services={SERVICES} customServices={customServices} setCustomServices={setCustomServices} setOrders={setOrders} formatRp={formatRp} setActiveTab={setActiveTab} setActiveNota={setActiveNota} showAlert={showAlert} />}
         {activeTab === 'kalender' && <KalenderView orders={orders} formatRp={formatRp} setActiveNota={setActiveNota} />}
         {activeTab === 'riwayat' && <RiwayatView orders={orders} setOrders={setOrders} formatRp={formatRp} setActiveNota={setActiveNota} showAlert={showAlert} showConfirm={showConfirm} />}
         {activeTab === 'laporan' && <LaporanView orders={orders} formatRp={formatRp} showAlert={showAlert} />}
       </div>
 
-      {/* NAVIGASI BAWAH (Tema Oranye) */}
-      <div className={`fixed bottom-6 left-4 right-4 bg-[#f97316] flex justify-between items-center px-2 py-2 z-50 rounded-[2rem] shadow-none mx-auto max-w-lg transition-transform duration-300 ease-in-out ${isKeyboardOpen ? 'translate-y-[150%] opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'}`}>
-        <NavItem icon={<ClipboardList />} label="Kasir" isActive={activeTab === 'kasir'} onClick={() => setActiveTab('kasir')} />
-        <NavItem icon={<CalendarDays />} label="Jadwal" isActive={activeTab === 'kalender'} onClick={() => setActiveTab('kalender')} />
-        <NavItem icon={<History />} label="Riwayat" isActive={activeTab === 'riwayat'} onClick={() => setActiveTab('riwayat')} />
-        <NavItem icon={<BarChart />} label="Laporan" isActive={activeTab === 'laporan'} onClick={() => setActiveTab('laporan')} />
+      {/* STRUKTUR DOCK MENYATU (Total Harga & Navigasi diikat dalam satu div Absolute Bawah) */}
+      <div className={`fixed bottom-0 left-0 right-0 w-full z-[60] px-4 pb-6 transition-transform duration-300 ease-in-out pointer-events-none ${isKeyboardOpen ? 'translate-y-[150%] opacity-0' : 'translate-y-0 opacity-100'}`}>
+        
+        {/* TOTAL HARGA DOCK (Hanya muncul jika di tab kasir, diletakkan tepat di atas navigasi tanpa jarak) */}
+        {activeTab === 'kasir' && (
+          <div className="mx-auto max-w-lg bg-white pt-5 px-5 pb-[4.5rem] -mb-[3.5rem] rounded-t-[2.5rem] rounded-b-[2rem] shadow-[0_-15px_40px_-15px_rgba(0,0,0,0.15)] border border-slate-100 flex justify-between items-center pointer-events-auto relative">
+            <div className="flex-1 min-w-0 pr-4">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Total Tagihan</p>
+              <p className="text-2xl font-black text-orange-600 leading-none tracking-tight truncate">
+                {/* Menghitung total dinamis berdasarkan orderan yang belum tersimpan */}
+                <KasirTotalCalculator services={SERVICES} customServices={customServices} formatRp={formatRp} />
+              </p>
+            </div>
+            {/* Tombol trigger event klik dengan ID */}
+            <button 
+              onClick={() => document.getElementById('btn-simpan-kasir')?.click()} 
+              className="shrink-0 bg-[#f97316] hover:bg-orange-600 text-white font-black px-8 py-4 rounded-2xl shadow-xl shadow-orange-200 active:scale-95 transition-transform flex items-center justify-center gap-2"
+            >
+              Simpan <CheckCircle size={20}/>
+            </button>
+          </div>
+        )}
+
+        {/* NAVIGASI BAWAH */}
+        <div className="mx-auto max-w-lg bg-[#f97316] flex justify-between items-center px-2 py-2 rounded-[2rem] shadow-lg pointer-events-auto relative z-[61]">
+          <NavItem icon={<ClipboardList />} label="Kasir" isActive={activeTab === 'kasir'} onClick={() => setActiveTab('kasir')} />
+          <NavItem icon={<CalendarDays />} label="Jadwal" isActive={activeTab === 'kalender'} onClick={() => setActiveTab('kalender')} />
+          <NavItem icon={<History />} label="Riwayat" isActive={activeTab === 'riwayat'} onClick={() => setActiveTab('riwayat')} />
+          <NavItem icon={<BarChart />} label="Laporan" isActive={activeTab === 'laporan'} onClick={() => setActiveTab('laporan')} />
+        </div>
+
       </div>
 
       {/* MODALS */}
@@ -210,6 +225,31 @@ export default function App() {
   );
 }
 
+// Komponen Pembantu untuk Menghitung Total Real-time pada Dock Global
+function KasirTotalCalculator({ services, customServices, formatRp }) {
+  const [total, setTotal] = useState(0);
+  
+  // Sinkronisasi dengan localStorage yang di-update oleh KasirView
+  useEffect(() => {
+    const handleStorageChange = () => {
+      try {
+        const savedData = localStorage.getItem('l_carwash_temp_total');
+        if (savedData) setTotal(JSON.parse(savedData));
+        else setTotal(0);
+      } catch(e) {}
+    };
+    
+    // Mendaftarkan event custom untuk update total secara real-time
+    window.addEventListener('updateTotalKasir', handleStorageChange);
+    handleStorageChange();
+    
+    return () => window.removeEventListener('updateTotalKasir', handleStorageChange);
+  }, []);
+
+  return <>{formatRp(total)}</>;
+}
+
+
 function NavItem({ icon, label, isActive, onClick }) {
   return (
     <button onClick={onClick} className={`flex items-center justify-center transition-all duration-300 ${isActive ? 'bg-white text-[#f97316] px-6 py-3 rounded-2xl font-black shadow-lg scale-105' : 'text-white/70 p-3 hover:text-white active:scale-95'}`}>
@@ -220,7 +260,7 @@ function NavItem({ icon, label, isActive, onClick }) {
 }
 
 // --- VIEW: KASIR ---
-function KasirView({ services, customServices, setCustomServices, setOrders, formatRp, setActiveTab, setActiveNota, showAlert, isKeyboardOpen }) {
+function KasirView({ services, customServices, setCustomServices, setOrders, formatRp, setActiveTab, setActiveNota, showAlert }) {
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [address, setAddress] = useState('');
@@ -242,12 +282,29 @@ function KasirView({ services, customServices, setCustomServices, setOrders, for
   }, {});
 
   const toggleItem = (service) => {
+    let newSelected;
     const exists = selectedItems.find(item => item.id === service.id);
-    if (exists) setSelectedItems(selectedItems.filter(item => item.id !== service.id));
-    else setSelectedItems([...selectedItems, service]);
+    if (exists) newSelected = selectedItems.filter(item => item.id !== service.id);
+    else newSelected = [...selectedItems, service];
+    
+    setSelectedItems(newSelected);
   };
 
   const currentTotal = selectedItems.reduce((sum, item) => sum + getPrice(item, carSize), 0);
+
+  // Menyimpan total sementara agar bisa dibaca oleh Dock global
+  useEffect(() => {
+    localStorage.setItem('l_carwash_temp_total', JSON.stringify(currentTotal));
+    window.dispatchEvent(new Event('updateTotalKasir'));
+  }, [currentTotal]);
+
+  // Mereset total saat keluar
+  useEffect(() => {
+    return () => {
+      localStorage.setItem('l_carwash_temp_total', '0');
+      window.dispatchEvent(new Event('updateTotalKasir'));
+    };
+  }, []);
 
   const handleSimpan = () => {
     if (selectedItems.length === 0) return showAlert('Pilih minimal 1 layanan!');
@@ -369,7 +426,14 @@ function KasirView({ services, customServices, setCustomServices, setOrders, for
                         <p className="text-[10px] font-black text-orange-600 uppercase tracking-widest mb-2 pl-1">Konfirmasi Ukuran Kendaraan:</p>
                         <select 
                           value={carSize} 
-                          onChange={e => {e.stopPropagation(); setCarSize(e.target.value)}} 
+                          onChange={e => {
+                            e.stopPropagation(); 
+                            setCarSize(e.target.value);
+                            // Memicu trigger perhitungan total baru ke localStorage secara paksa
+                            setTimeout(() => {
+                              window.dispatchEvent(new Event('updateTotalKasir'));
+                            }, 50);
+                          }} 
                           onClick={e => e.stopPropagation()}
                           className="w-full text-sm p-3 border border-orange-300 rounded-xl bg-white text-orange-800 font-bold outline-none appearance-none cursor-pointer shadow-sm"
                         >
@@ -409,17 +473,8 @@ function KasirView({ services, customServices, setCustomServices, setOrders, for
         )}
       </div>
 
-      {/* BOX TOTAL HARGA - DIBUAT MENYATU DENGAN NAVIGASI BAWAH SEPERTI DOCK */}
-      <div className={`fixed bottom-6 left-4 right-4 mx-auto max-w-lg bg-white pt-5 px-5 pb-[5.5rem] rounded-[2.5rem] shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.2)] border border-slate-100 flex justify-between items-center z-40 transition-all duration-300 ease-in-out ${isKeyboardOpen ? 'translate-y-[150%] opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'}`}>
-        <div className="flex-1 min-w-0 pr-4">
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Total Tagihan</p>
-          <p className="text-2xl font-black text-orange-600 leading-none tracking-tight truncate">{formatRp(currentTotal)}</p>
-        </div>
-        <button onClick={handleSimpan} className="shrink-0 bg-[#f97316] hover:bg-orange-600 text-white font-black px-8 py-4 rounded-2xl shadow-xl shadow-orange-200 active:scale-95 transition-transform flex items-center justify-center gap-2">
-          Simpan <CheckCircle size={20}/>
-        </button>
-      </div>
-      
+      {/* Tombol Tersembunyi (Hidden Trigger) untuk Handle Simpan dari Dock Global */}
+      <button id="btn-simpan-kasir" onClick={handleSimpan} className="hidden"></button>
     </div>
   );
 }
