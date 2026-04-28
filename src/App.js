@@ -22,7 +22,9 @@ import {
   FileDown,
   Phone,
   Share2,
-  Download
+  Download,
+  Edit,
+  Star
 } from 'lucide-react';
 
 // --- DATA MASTER LAYANAN (Diperbarui dengan Foto Asli) ---
@@ -46,6 +48,9 @@ export default function App() {
   const [activeNota, setActiveNota] = useState(null);
   const [dialog, setDialog] = useState(null);
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+  
+  // State untuk menyimpan pesanan yang sedang diedit
+  const [editingOrder, setEditingOrder] = useState(null);
   
   // State Layanan Custom & Order dengan LocalStorage
   const [customServices, setCustomServices] = useState(() => {
@@ -168,9 +173,9 @@ export default function App() {
 
       {/* CONTENT AREA (Padding ekstra besar di bawah khusus untuk Kasir agar konten bisa digulir mentok ke atas dock) */}
       <div className={`flex-1 overflow-y-auto hide-scrollbar px-5 ${activeTab === 'kasir' ? 'pb-[260px]' : 'pb-32'} ${activeTab !== 'kasir' ? 'pt-8' : 'pt-6'} w-full relative`}>
-        {activeTab === 'kasir' && <KasirView services={SERVICES} customServices={customServices} setCustomServices={setCustomServices} setOrders={setOrders} formatRp={formatRp} setActiveTab={setActiveTab} setActiveNota={setActiveNota} showAlert={showAlert} />}
+        {activeTab === 'kasir' && <KasirView services={SERVICES} customServices={customServices} setCustomServices={setCustomServices} setOrders={setOrders} formatRp={formatRp} setActiveTab={setActiveTab} setActiveNota={setActiveNota} showAlert={showAlert} isKeyboardOpen={isKeyboardOpen} editingOrder={editingOrder} setEditingOrder={setEditingOrder} />}
         {activeTab === 'kalender' && <KalenderView orders={orders} formatRp={formatRp} setActiveNota={setActiveNota} />}
-        {activeTab === 'riwayat' && <RiwayatView orders={orders} setOrders={setOrders} formatRp={formatRp} setActiveNota={setActiveNota} showAlert={showAlert} showConfirm={showConfirm} />}
+        {activeTab === 'riwayat' && <RiwayatView orders={orders} setOrders={setOrders} formatRp={formatRp} setActiveNota={setActiveNota} showAlert={showAlert} showConfirm={showConfirm} setEditingOrder={setEditingOrder} setActiveTab={setActiveTab} />}
         {activeTab === 'laporan' && <LaporanView orders={orders} formatRp={formatRp} showAlert={showAlert} />}
       </div>
 
@@ -184,7 +189,7 @@ export default function App() {
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Total Tagihan</p>
               <p className="text-2xl font-black text-orange-600 leading-none tracking-tight truncate">
                 {/* Menghitung total dinamis berdasarkan orderan yang belum tersimpan */}
-                <KasirTotalCalculator services={SERVICES} customServices={customServices} formatRp={formatRp} />
+                <KasirTotalCalculator formatRp={formatRp} />
               </p>
             </div>
             {/* Tombol trigger event klik dengan ID */}
@@ -192,7 +197,7 @@ export default function App() {
               onClick={() => document.getElementById('btn-simpan-kasir')?.click()} 
               className="shrink-0 bg-[#f97316] hover:bg-orange-600 text-white font-black px-8 py-4 rounded-2xl shadow-xl shadow-orange-200 active:scale-95 transition-transform flex items-center justify-center gap-2"
             >
-              Simpan <CheckCircle size={20}/>
+              {editingOrder ? 'Perbarui' : 'Simpan'} <CheckCircle size={20}/>
             </button>
           </div>
         )}
@@ -226,7 +231,7 @@ export default function App() {
 }
 
 // Komponen Pembantu untuk Menghitung Total Real-time pada Dock Global
-function KasirTotalCalculator({ services, customServices, formatRp }) {
+function KasirTotalCalculator({ formatRp }) {
   const [total, setTotal] = useState(0);
   
   // Sinkronisasi dengan localStorage yang di-update oleh KasirView
@@ -260,7 +265,7 @@ function NavItem({ icon, label, isActive, onClick }) {
 }
 
 // --- VIEW: KASIR ---
-function KasirView({ services, customServices, setCustomServices, setOrders, formatRp, setActiveTab, setActiveNota, showAlert }) {
+function KasirView({ services, customServices, setCustomServices, setOrders, formatRp, setActiveTab, setActiveNota, showAlert, isKeyboardOpen, editingOrder, setEditingOrder }) {
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [address, setAddress] = useState('');
@@ -273,6 +278,36 @@ function KasirView({ services, customServices, setCustomServices, setOrders, for
   const [showCustomForm, setShowCustomForm] = useState(false);
   const [customName, setCustomName] = useState('');
   const [customPrice, setCustomPrice] = useState('');
+
+  // Efek untuk memuat data jika sedang dalam mode edit
+  useEffect(() => {
+    if (editingOrder) {
+      setCustomerName(editingOrder.customerName === 'Pelanggan Umum' ? '' : editingOrder.customerName);
+      setCustomerPhone(editingOrder.customerPhone === '-' ? '' : editingOrder.customerPhone);
+      setAddress(editingOrder.address === '-' ? '' : editingOrder.address);
+      setPlate(editingOrder.plate);
+      setCarType(editingOrder.carType === '-' ? '' : editingOrder.carType);
+      setCarSize(editingOrder.carSize === '-' ? 'Kecil' : editingOrder.carSize);
+      setSelectedItems(editingOrder.items || []);
+      
+      if (editingOrder.date && editingOrder.date.includes('/')) {
+        const [d, m, y] = editingOrder.date.split('/');
+        setOrderDate(`${y}-${m}-${d}`);
+      }
+      setOrderTime(editingOrder.time || new Date().toTimeString().slice(0, 5));
+    } else {
+      // Reset form jika batal edit / pesanan baru
+      setCustomerName('');
+      setCustomerPhone('');
+      setAddress('');
+      setPlate('');
+      setCarType('');
+      setCarSize('Kecil');
+      setSelectedItems([]);
+      setOrderDate(new Date().toISOString().split('T')[0]);
+      setOrderTime(new Date().toTimeString().slice(0, 5));
+    }
+  }, [editingOrder]);
 
   const allServices = [...services, ...customServices];
   const groupedServices = allServices.reduce((acc, service) => {
@@ -314,7 +349,7 @@ function KasirView({ services, customServices, setCustomServices, setOrders, for
     const itemsWithPrice = selectedItems.map(item => ({ ...item, calculatedPrice: getPrice(item, carSize) }));
     
     const newOrder = {
-      id: `TRX-${Math.floor(1000 + Math.random() * 9000)}`,
+      id: editingOrder ? editingOrder.id : `TRX-${Math.floor(1000 + Math.random() * 9000)}`,
       date: orderDate.split('-').reverse().join('/'),
       time: orderTime,
       customerName: customerName || 'Pelanggan Umum',
@@ -325,16 +360,38 @@ function KasirView({ services, customServices, setCustomServices, setOrders, for
       carSize: selectedItems.some(i => typeof i.price === 'object') ? carSize : '-', 
       items: itemsWithPrice,
       total: currentTotal,
-      status: 'Belum Lunas'
+      status: editingOrder ? editingOrder.status : 'Belum Lunas' // Pertahankan status jika diedit
     };
 
-    setOrders(prev => [newOrder, ...prev]);
+    if (editingOrder) {
+      // Update pesanan yang sudah ada
+      setOrders(prev => prev.map(o => o.id === editingOrder.id ? newOrder : o));
+      setEditingOrder(null); // Keluar dari mode edit setelah simpan
+    } else {
+      // Simpan sebagai pesanan baru
+      setOrders(prev => [newOrder, ...prev]);
+    }
+    
     setActiveTab('riwayat');
     setActiveNota(newOrder);
   };
 
   return (
     <div className="animate-fadeIn space-y-6 relative">
+      
+      {/* PEMBERITAHUAN MODE EDIT */}
+      {editingOrder && (
+        <div className="bg-blue-100 text-blue-800 p-5 rounded-[2rem] flex justify-between items-center border border-blue-200 shadow-sm mb-4">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-widest text-blue-500 mb-0.5">Mode Edit Transaksi</p>
+            <p className="font-bold text-sm leading-none">{editingOrder.id}</p>
+          </div>
+          <button onClick={() => setEditingOrder(null)} className="bg-white text-blue-600 px-4 py-2.5 rounded-xl text-xs font-black shadow-sm active:scale-95 transition-transform">
+            Batal Edit
+          </button>
+        </div>
+      )}
+
       <div>
         <h2 className="font-black text-lg text-slate-800 flex items-center gap-2.5 mb-4 pl-1">
           <div className="p-2 bg-orange-100 rounded-xl text-orange-600"><Car size={20}/></div>
@@ -373,7 +430,7 @@ function KasirView({ services, customServices, setCustomServices, setOrders, for
         </div>
       </div>
 
-      {/* SECTION DAFTAR LAYANAN (KARTU GAMBAR KOTAK KIRI & INFO KANAN) */}
+      {/* SECTION DAFTAR LAYANAN (DIPERBESAR) */}
       <div className="space-y-6 pt-4">
         {Object.keys(groupedServices).map(cat => (
           <div key={cat} className="space-y-4">
@@ -382,7 +439,6 @@ function KasirView({ services, customServices, setCustomServices, setOrders, for
             <div className="grid grid-cols-1 gap-4">
               {groupedServices[cat].map(item => {
                 const isSelected = selectedItems.find(i => i.id === item.id);
-                // Menyiapkan gambar default untuk layanan custom yang baru ditambah
                 const itemImage = item.image || 'https://images.unsplash.com/photo-1550524514-411a7f0525ee?w=800&auto=format&fit=crop&q=60'; 
                 
                 return (
@@ -392,50 +448,69 @@ function KasirView({ services, customServices, setCustomServices, setOrders, for
                     className={`rounded-[1.5rem] border-2 transition-all flex flex-col relative cursor-pointer active:scale-[0.98] overflow-hidden ${isSelected ? 'border-orange-500 bg-orange-50 shadow-md' : 'bg-white border-slate-100 shadow-sm hover:border-slate-200'}`}
                   >
                     
-                    {/* Ikon Ceklis saat dipilih (Melingkar di pojok kanan) */}
-                    {isSelected && <div className="absolute top-3 right-3 bg-[#f97316] text-white rounded-full p-1 shadow-sm z-20"><CheckCircle size={18}/></div>}
+                    {isSelected && <div className="absolute top-4 right-4 bg-[#f97316] text-white rounded-full p-1.5 shadow-sm z-20"><CheckCircle size={22}/></div>}
                     
-                    <div className="flex flex-row items-stretch min-h-[110px]">
-                      {/* AREA GAMBAR KOTAK FULL DI KIRI */}
-                      <div className="w-[110px] sm:w-[130px] shrink-0 relative bg-slate-100 border-r border-slate-100">
+                    <div className="flex flex-row items-stretch min-h-[140px]"> {/* Tinggi Min Ditingkatkan dari 110 ke 140 */}
+                      
+                      {/* AREA KIRI: THUMBNAIL (DILEBARKAN) */}
+                      <div className="w-[130px] sm:w-[150px] shrink-0 relative bg-slate-100 border-r border-slate-100">
                         <img src={itemImage} alt={item.name} className="absolute inset-0 w-full h-full object-cover" />
                       </div>
 
-                      {/* INFORMASI LAYANAN & HARGA DI KANAN */}
-                      <div className="flex-1 min-w-0 p-4 pr-10 flex flex-col justify-center">
-                        <p className="text-sm font-black leading-tight mb-1 text-slate-800">{item.name}</p>
+                      {/* AREA KANAN: KONTEN (FONT DIPERBESAR) */}
+                      <div className="flex-1 min-w-0 p-4 sm:p-5 pr-14 flex flex-col justify-center">
                         
-                        {/* Menampilkan deskripsi kecil (jika ada) */}
-                        {item.desc && <p className="text-[10px] font-medium text-slate-500 mb-2 leading-snug line-clamp-2">{item.desc}</p>}
+                        {/* LABEL REKOMENDASI 5 BINTANG */}
+                        {item.recommended && (
+                          <div className="flex items-center gap-1.5 mb-1.5">
+                            <div className="flex text-yellow-400">
+                              <Star size={12} fill="currentColor" strokeWidth={0} />
+                              <Star size={12} fill="currentColor" strokeWidth={0} />
+                              <Star size={12} fill="currentColor" strokeWidth={0} />
+                              <Star size={12} fill="currentColor" strokeWidth={0} />
+                              <Star size={12} fill="currentColor" strokeWidth={0} />
+                            </div>
+                            <span className="text-[9px] font-black text-yellow-600 uppercase tracking-widest bg-yellow-100 px-2 py-0.5 rounded-md">
+                              Rekomendasi
+                            </span>
+                          </div>
+                        )}
+
+                        <p className="text-base sm:text-lg font-black leading-tight mb-1.5 text-slate-800">{item.name}</p>
                         
-                        {/* Keterangan Harga Detail */}
+                        {item.desc && <p className="text-xs font-medium text-slate-500 mb-3 leading-snug line-clamp-2">{item.desc}</p>}
+                        
                         {typeof item.price === 'object' ? (
-                          <div className="text-[10px] font-bold text-slate-600 mt-auto">
-                            <span className="block mb-0.5">Kecil: <span className="text-[#f97316] font-black">{formatRp(item.price.Kecil)}</span></span>
-                            <span className="block">Besar: <span className="text-[#f97316] font-black">{formatRp(item.price.Besar)}</span></span>
+                          <div className="text-xs font-bold text-slate-600 mt-auto flex flex-col gap-1">
+                            <div className="flex items-center justify-between bg-white border border-slate-100 px-2.5 py-1.5 rounded-lg shadow-sm">
+                               <span>Kecil:</span> 
+                               <span className="text-[#f97316] font-black text-sm">{formatRp(item.price.Kecil)}</span>
+                            </div>
+                            <div className="flex items-center justify-between bg-white border border-slate-100 px-2.5 py-1.5 rounded-lg shadow-sm">
+                               <span>Besar:</span> 
+                               <span className="text-[#f97316] font-black text-sm">{formatRp(item.price.Besar)}</span>
+                            </div>
                           </div>
                         ) : (
-                          <p className="text-xs font-black text-[#f97316] mt-auto">{formatRp(item.price)}</p>
+                          <p className="text-base font-black text-[#f97316] mt-auto">{formatRp(item.price)}</p>
                         )}
                       </div>
                     </div>
 
-                    {/* Jika Dipilih & Punya Pilihan Ukuran Mobil, Tampilkan Dropdown */}
                     {isSelected && typeof item.price === 'object' && (
-                      <div className="p-4 pt-3 border-t border-orange-200 bg-orange-50/50">
-                        <p className="text-[10px] font-black text-orange-600 uppercase tracking-widest mb-2 pl-1">Konfirmasi Ukuran Kendaraan:</p>
+                      <div className="p-4 sm:p-5 pt-4 border-t border-orange-200 bg-orange-50/50">
+                        <p className="text-xs font-black text-orange-600 uppercase tracking-widest mb-3 pl-1">Pilih Ukuran:</p>
                         <select 
                           value={carSize} 
                           onChange={e => {
                             e.stopPropagation(); 
                             setCarSize(e.target.value);
-                            // Memicu trigger perhitungan total baru ke localStorage secara paksa
                             setTimeout(() => {
                               window.dispatchEvent(new Event('updateTotalKasir'));
                             }, 50);
                           }} 
                           onClick={e => e.stopPropagation()}
-                          className="w-full text-sm p-3 border border-orange-300 rounded-xl bg-white text-orange-800 font-bold outline-none appearance-none cursor-pointer shadow-sm"
+                          className="w-full text-base p-4 border border-orange-300 rounded-xl bg-white text-orange-800 font-black outline-none appearance-none cursor-pointer shadow-sm"
                         >
                           <option value="Kecil">Mobil Kecil - {formatRp(item.price.Kecil)}</option>
                           <option value="Besar">Mobil Besar - {formatRp(item.price.Besar)}</option>
@@ -449,7 +524,6 @@ function KasirView({ services, customServices, setCustomServices, setOrders, for
           </div>
         ))}
 
-        {/* LAYANAN CUSTOM */}
         {!showCustomForm ? (
           <button onClick={() => setShowCustomForm(true)} className="w-full py-5 border-2 border-dashed border-slate-300 rounded-[2rem] text-slate-400 text-sm font-bold flex items-center justify-center gap-2 bg-white hover:bg-slate-50 transition-colors active:bg-slate-100">
             <Plus size={20}/> Tambah Layanan Khusus
@@ -460,8 +534,8 @@ function KasirView({ services, customServices, setCustomServices, setOrders, for
                 <span className="text-base font-black text-orange-800">Layanan Baru</span>
                 <button onClick={() => setShowCustomForm(false)} className="bg-orange-100 p-2 rounded-full text-orange-500"><X size={20}/></button>
              </div>
-             <input type="text" placeholder="Nama Layanan (Misa: Poles Kaca)" value={customName} onChange={e => setCustomName(e.target.value)} className="w-full p-4 rounded-2xl text-sm font-bold bg-white border border-orange-100 outline-none focus:ring-2 focus:ring-orange-400"/>
-             <input type="number" placeholder="Harga (Rp)" value={customPrice} onChange={e => setCustomPrice(e.target.value)} className="w-full p-4 rounded-2xl text-sm font-bold bg-white border border-orange-100 outline-none focus:ring-2 focus:ring-orange-400"/>
+             <input type="text" placeholder="Nama Layanan (Misa: Poles Kaca)" value={customName} onChange={e => setCustomName(e.target.value)} className="w-full p-4 rounded-2xl text-base font-bold bg-white border border-orange-100 outline-none focus:ring-2 focus:ring-orange-400"/>
+             <input type="number" placeholder="Harga (Rp)" value={customPrice} onChange={e => setCustomPrice(e.target.value)} className="w-full p-4 rounded-2xl text-base font-bold bg-white border border-orange-100 outline-none focus:ring-2 focus:ring-orange-400"/>
              <button onClick={() => {
                 if(!customName || !customPrice) return;
                 const ns = { id: Date.now(), name: customName, price: parseInt(customPrice), category: 'Layanan Custom' };
@@ -473,7 +547,7 @@ function KasirView({ services, customServices, setCustomServices, setOrders, for
         )}
       </div>
 
-      {/* Tombol Tersembunyi (Hidden Trigger) untuk Handle Simpan dari Dock Global */}
+      {/* Tombol Tersembunyi untuk Menangkap Trigger dari Dock Global */}
       <button id="btn-simpan-kasir" onClick={handleSimpan} className="hidden"></button>
     </div>
   );
@@ -592,7 +666,7 @@ function KalenderView({ orders, formatRp, setActiveNota }) {
 }
 
 // --- VIEW: RIWAYAT PESANAN ---
-function RiwayatView({ orders, setOrders, formatRp, setActiveNota, showConfirm }) {
+function RiwayatView({ orders, setOrders, formatRp, setActiveNota, showConfirm, setEditingOrder, setActiveTab }) {
   const [search, setSearch] = useState('');
   
   const filtered = orders.filter(o => {
@@ -637,7 +711,8 @@ function RiwayatView({ orders, setOrders, formatRp, setActiveNota, showConfirm }
                   <p className="font-black text-orange-600 text-xl truncate">{formatRp(order.total)}</p>
                 </div>
                 <div className="flex gap-2 shrink-0">
-                  <button onClick={() => setActiveNota(order)} className="p-4 bg-slate-50 hover:bg-slate-100 text-slate-400 rounded-2xl transition-colors"><Printer size={20}/></button>
+                  <button onClick={() => { setEditingOrder(order); setActiveTab('kasir'); }} className="p-4 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-2xl transition-colors shadow-sm"><Edit size={20}/></button>
+                  <button onClick={() => setActiveNota(order)} className="p-4 bg-slate-50 hover:bg-slate-100 text-slate-400 rounded-2xl transition-colors shadow-sm"><Printer size={20}/></button>
                   {order.status !== 'Lunas' && (
                     <button onClick={() => showConfirm(`Konfirmasi Lunas untuk ${formatRp(order.total)}?`, () => setOrders(prev => prev.map(o => o.id === order.id ? {...o, status: 'Lunas'} : o)))} className="bg-green-500 hover:bg-green-600 text-white text-xs font-black px-6 py-4 rounded-2xl shadow-xl shadow-green-200 active:scale-95 transition-transform">LUNASI</button>
                   )}
@@ -670,7 +745,6 @@ function LaporanView({ orders, formatRp, showAlert }) {
   const monthOrders = orders.filter(o => o.date && o.date.endsWith(`/${monthStr}`) && o.status === 'Lunas');
   const totalMonth = monthOrders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
 
-  // FUNGSI BARU: GENERATE PDF LANGSUNG
   const handleDownloadPDF = async () => {
     if (monthOrders.length === 0) return showAlert("Tidak ada data transaksi bulan ini untuk dijadikan PDF.");
     
@@ -727,7 +801,7 @@ function LaporanView({ orders, formatRp, showAlert }) {
         head: [tableColumn],
         body: tableRows,
         theme: 'grid',
-        headStyles: { fillColor: [249, 115, 22] }, // Warna orange khas
+        headStyles: { fillColor: [249, 115, 22] },
         foot: [["", "", "", "TOTAL", formatRp(totalMonth)]],
         footStyles: { fillColor: [241, 245, 249], textColor: [0, 0, 0], fontStyle: 'bold' },
         styles: { fontSize: 9 }
@@ -829,13 +903,11 @@ function NotaModal({ order, formatRp, onClose, showAlert }) {
   };
 
   const handleDownloadImage = () => {
-    // Solusi anti-crash: Instruksi khusus untuk HP Android Webview
     showAlert('TIPS MENYIMPAN: Tekan dan Tahan (Long Press) pada gambar nota dengan agak kuat, lalu pilih menu "Simpan Gambar" / "Download Image" dari HP Anda.');
   };
 
   const handleSendWA = () => {
     const waUrl = `https://wa.me/?text=${encodeURIComponent(textWaData)}`;
-    // Solusi anti-crash: ganti tab saat ini alih-alih membuka window popup baru
     window.location.href = waUrl; 
   };
 
@@ -843,7 +915,6 @@ function NotaModal({ order, formatRp, onClose, showAlert }) {
     <div className="fixed inset-0 bg-slate-900/90 z-[100] flex items-center justify-center p-5 backdrop-blur-md animate-fadeIn">
       <div className="bg-white w-full max-w-sm rounded-[3rem] overflow-hidden flex flex-col shadow-2xl">
         
-        {/* JIKA MODE SCREENSHOT AKTIF */}
         {capturedImage ? (
           <div className="flex flex-col h-full max-h-[85vh]">
             <div className="p-4 bg-slate-800 border-b border-slate-700 text-center shrink-0 shadow-md z-10 relative">
@@ -869,7 +940,6 @@ function NotaModal({ order, formatRp, onClose, showAlert }) {
             </div>
           </div>
         ) : (
-          /* JIKA NOTA BIASA (BELUM KLIK SHARE) */
           <>
             <div id="nota-capture-area" className="bg-white">
               <div className="bg-slate-50 p-8 text-center relative border-b border-dashed border-slate-200">
