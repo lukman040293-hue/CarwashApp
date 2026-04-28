@@ -27,7 +27,7 @@ import {
 
 // --- DATA MASTER LAYANAN (Diperbarui dengan Gambar Kotak & Deskripsi) ---
 const SERVICES = [
-  { id: 'w1', name: 'Basic Wash', category: 'Carwash', price: 150000, image: 'https://cdn-icons-png.flaticon.com/512/2830/2830305.png', desc: 'Cuci luar dalam, vakum, semir ban.' },
+  { id: 'w1', name: 'Basic Wash', category: 'Carwash', price: 150000, image: 'https://images.unsplash.com/photo-1777398801194-b43d80625efd?q=80&w=880&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', desc: 'Cuci luar dalam, vakum, semir ban.' },
   { id: 'w2', name: 'Super Premium Wash', category: 'Carwash', price: { Kecil: 300000, Besar: 315000 }, image: 'https://cdn-icons-png.flaticon.com/512/3085/3085330.png', recommended: true, desc: 'Basic wash + wax body + jamur kaca ringan.' },
   { id: 'w3', name: 'Premium Wash', category: 'Carwash', price: 200000, image: 'https://cdn-icons-png.flaticon.com/512/5034/5034453.png', desc: 'Pencucian detail dengan perlindungan ekstra.' },
   { id: 'd1', name: 'Wash(Cuci) Engine', category: 'Engine', price: { Kecil: 125000, Besar: 145000 }, image: 'https://cdn-icons-png.flaticon.com/512/3138/3138307.png', desc: 'Pembersihan debu ruang mesin.' },
