@@ -724,7 +724,7 @@ function NotaModal({ order, formatRp, onClose, showAlert }) {
 
   const handleDownloadImage = () => {
     // Solusi anti-crash: Instruksi khusus untuk HP Android Webview
-    showAlert('TIPS MENYIMPAN: Tekan dan Tahan (Long Press) pada gambar nota, lalu pilih menu "Simpan Gambar" / "Download Image" dari HP Anda.');
+    showAlert('TIPS MENYIMPAN: Tekan dan Tahan (Long Press) pada gambar nota dengan agak kuat, lalu pilih menu "Simpan Gambar" / "Download Image" dari HP Anda.');
   };
 
   const handleSendWA = () => {
@@ -741,11 +741,22 @@ function NotaModal({ order, formatRp, onClose, showAlert }) {
           <div className="flex flex-col h-full max-h-[85vh]">
             <div className="p-4 bg-blue-50 border-b border-blue-100 text-center shrink-0">
               <p className="text-blue-800 font-bold text-xs mb-1">Nota Berhasil Dibuat!</p>
-              <p className="text-blue-600 text-[10px] leading-tight">Silakan pilih opsi pengiriman atau simpan di bawah.</p>
+              <p className="text-blue-600 text-[10px] leading-tight">Silakan tekan dan tahan gambar di bawah ini untuk menyimpan.</p>
             </div>
             
-            <div className="flex-1 overflow-y-auto p-4 bg-slate-100 flex justify-center items-start">
-              <img src={capturedImage} alt="Nota" className="max-w-full h-auto rounded-xl shadow-md border border-slate-300" />
+            {/* PERBAIKAN: Menambahkan style WebkitTouchCallout agar fitur Tahan (Long Press) paksa diaktifkan */}
+            <div className="flex-1 overflow-y-auto p-4 bg-slate-100 flex justify-center items-start" style={{ WebkitTouchCallout: 'default' }}>
+              <img 
+                src={capturedImage} 
+                alt="Nota" 
+                className="max-w-full h-auto rounded-xl shadow-md border border-slate-300" 
+                style={{ 
+                  WebkitTouchCallout: 'default', 
+                  WebkitUserSelect: 'auto', 
+                  userSelect: 'auto', 
+                  pointerEvents: 'auto' 
+                }}
+              />
             </div>
 
             <div className="p-5 bg-white shrink-0 flex flex-col gap-3 border-t border-slate-100">
