@@ -29,6 +29,13 @@ import {
   Navigation
 } from 'lucide-react';
 
+// --- PENGATURAN HEADER & LOGO ---
+// Bos bisa mengganti logo, nama usaha, dan sub-teksnya di sini:
+const APP_LOGO = 'https://images.unsplash.com/photo-1777407265534-248433dc692c?q=80&w=880&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'; // Ganti dengan link gambar/logo Bos
+const APP_NAME_LINE1 = 'Carwash & Detailing';       // Nama Baris Atas
+const APP_NAME_LINE2 = '';     // Nama Baris Bawah (Bisa dikosongkan jika tidak perlu)
+const APP_SUBTITLE = 'Home Service';      // Teks kecil di bawah judul
+
 // --- DATA MASTER LAYANAN (Diperbarui dengan Foto Asli) ---
 const SERVICES = [
   { id: 'w1', name: 'Basic Wash', category: 'Carwash', price: 150000, image: 'https://images.unsplash.com/photo-1777400924439-3e5ab46a9373?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', desc: 'Prewash, Handwash, Vacum Interior, Dressing Ban, Lap Mircofiber, Finishing' },
@@ -43,6 +50,19 @@ const getPrice = (item, size) => {
   if (!item || item.price === undefined) return 0;
   if (typeof item.price === 'number') return item.price;
   return item.price[size] || item.price['Kecil'] || 0;
+};
+
+// --- HELPER: DETEKSI SHARELOK WA / URL PETA ---
+const getMapLink = (address) => {
+  if (!address || address === '-') return null;
+  // Cek apakah di dalam teks ada link (http:// atau https://)
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const match = address.match(urlRegex);
+  if (match) {
+    return match[0]; // Kembalikan link sharelok tersebut
+  }
+  // Jika teks biasa (bukan link), gunakan pencarian Google Maps biasa
+  return `https://maps.google.com/?q=${encodeURIComponent(address)}`;
 };
 
 export default function App() {
@@ -84,7 +104,7 @@ export default function App() {
   useEffect(() => {
     const metaThemeColor = document.querySelector("meta[name=theme-color]");
     if (metaThemeColor) {
-      metaThemeColor.setAttribute("content", "#f97316");
+      metaThemeColor.setAttribute("content", "#000000"); // Diubah ke Hitam
     }
   }, []);
 
@@ -141,26 +161,25 @@ export default function App() {
         .animate-fadeIn { animation: fadeIn 0.3s ease-out forwards; }
       `}} />
 
-      {/* HEADER SECTION (Tema Oranye) HANYA TAMPIL DI KASIR */}
+      {/* HEADER SECTION (Tema Hitam) HANYA TAMPIL DI KASIR */}
       {activeTab === 'kasir' && (
         <div className="shrink-0 z-10 w-full">
-          <div className="bg-[#f97316] rounded-b-[2rem] px-6 pt-8 pb-5 flex flex-col justify-center shadow-xl shadow-[#f97316]/20 text-white relative overflow-hidden">
+          <div className="bg-black rounded-b-[2rem] px-6 pt-8 pb-5 flex flex-col justify-center shadow-xl shadow-black/20 text-white relative overflow-hidden">
             <div className="absolute -right-8 -top-8 w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
-            <div className="absolute -left-10 -bottom-10 w-32 h-32 bg-orange-700/20 rounded-full blur-xl"></div>
+            <div className="absolute -left-10 -bottom-10 w-32 h-32 bg-slate-800/50 rounded-full blur-xl"></div>
             <div className="flex justify-between items-center relative z-10">
               
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-2xl p-2 flex items-center justify-center border border-white/30 shadow-sm shrink-0">
-                  <img 
-                    src="https://cdn-icons-png.flaticon.com/512/1048/1048313.png" 
-                    alt="Logo L Carwash" 
-                    className="w-full h-full object-contain drop-shadow-md"
-                  />
-                </div>
+              <div className="flex items-center gap-4">
+                {/* AREA GAMBAR ICON / LOGO (DIPERBESAR & TANPA BORDER) */}
+                <img 
+                  src={APP_LOGO} 
+                  alt="Logo Aplikasi" 
+                  className="w-16 h-16 sm:w-20 sm:h-20 object-cover drop-shadow-xl shrink-0 rounded-xl"
+                />
                 
                 <div>
-                  <h1 className="text-sm font-black tracking-[0.1em] text-white uppercase drop-shadow-md leading-tight">L Carwash<br/>& Detailing</h1>
-                  <p className="text-[9px] font-bold tracking-[0.25em] text-yellow-200 mt-1 uppercase">Home Service</p>
+                  <h1 className="text-base sm:text-lg font-black tracking-[0.1em] text-white uppercase drop-shadow-md leading-tight">{APP_NAME_LINE1}<br/>{APP_NAME_LINE2}</h1>
+                  <p className="text-xs sm:text-sm font-black tracking-[0.25em] text-yellow-200 mt-1.5 uppercase">{APP_SUBTITLE}</p>
                 </div>
               </div>
 
@@ -173,6 +192,7 @@ export default function App() {
         </div>
       )}
 
+      {/* CONTENT AREA (Padding ekstra besar di bawah khusus untuk Kasir agar konten bisa digulir mentok ke atas dock) */}
       {/* CONTENT AREA */}
       <div className={`flex-1 overflow-y-auto hide-scrollbar ${activeTab === 'peta' ? 'px-0 pt-0 pb-32' : 'px-5'} ${activeTab === 'kasir' ? 'pb-[260px]' : (activeTab !== 'peta' ? 'pb-32' : '')} ${activeTab !== 'kasir' && activeTab !== 'peta' ? 'pt-8' : 'pt-6'} w-full relative`}>
         {activeTab === 'kasir' && <KasirView services={SERVICES} customServices={customServices} setCustomServices={setCustomServices} setOrders={setOrders} formatRp={formatRp} setActiveTab={setActiveTab} setActiveNota={setActiveNota} showAlert={showAlert} isKeyboardOpen={isKeyboardOpen} editingOrder={editingOrder} setEditingOrder={setEditingOrder} />}
@@ -187,7 +207,7 @@ export default function App() {
         
         {/* TOTAL HARGA DOCK (Hanya muncul jika di tab kasir) */}
         {activeTab === 'kasir' && (
-          <div className="mx-auto max-w-lg bg-white pt-5 px-5 pb-[4.5rem] -mb-[3.5rem] rounded-t-[2.5rem] rounded-b-[2rem] shadow-[0_-15px_40px_-15px_rgba(0,0,0,0.15)] border border-slate-100 flex justify-between items-center pointer-events-auto relative">
+          <div className="mx-auto max-w-lg bg-white pt-4 px-5 pb-[4.5rem] -mb-[3.5rem] rounded-t-[2rem] rounded-b-[2rem] shadow-[0_-4px_15px_rgba(0,0,0,0.05)] border border-slate-200 flex justify-between items-center pointer-events-auto relative">
             <div className="flex-1 min-w-0 pr-4">
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Total Tagihan</p>
               <p className="text-2xl font-black text-orange-600 leading-none tracking-tight truncate">
@@ -196,7 +216,7 @@ export default function App() {
             </div>
             <button 
               onClick={() => document.getElementById('btn-simpan-kasir')?.click()} 
-              className="shrink-0 bg-[#f97316] hover:bg-orange-600 text-white font-black px-6 sm:px-8 py-4 rounded-2xl shadow-xl shadow-orange-200 active:scale-95 transition-transform flex items-center justify-center gap-2"
+              className="shrink-0 bg-[#f97316] hover:bg-orange-600 text-white font-black px-6 sm:px-8 py-4 rounded-2xl shadow-md shadow-orange-200 active:scale-95 transition-transform flex items-center justify-center gap-2"
             >
               {editingOrder ? 'Perbarui' : 'Simpan'} <CheckCircle size={20}/>
             </button>
@@ -204,7 +224,7 @@ export default function App() {
         )}
 
         {/* NAVIGASI BAWAH (Disesuaikan agar muat 5 icon) */}
-        <div className="mx-auto max-w-lg bg-[#f97316] flex justify-between items-center px-1.5 py-2 rounded-[2rem] shadow-lg pointer-events-auto relative z-[61]">
+        <div className="mx-auto max-w-lg bg-[#f97316] flex justify-between items-center px-1.5 py-2 rounded-[2rem] shadow-md shadow-orange-900/20 pointer-events-auto relative z-[61]">
           <NavItem icon={<ClipboardList />} label="Kasir" isActive={activeTab === 'kasir'} onClick={() => setActiveTab('kasir')} />
           <NavItem icon={<Map />} label="Peta" isActive={activeTab === 'peta'} onClick={() => setActiveTab('peta')} />
           <NavItem icon={<CalendarDays />} label="Jadwal" isActive={activeTab === 'kalender'} onClick={() => setActiveTab('kalender')} />
@@ -275,27 +295,51 @@ function PetaView({ orders, formatRp, setActiveNota }) {
       : 'Indonesia'
   );
 
+  // Cek apakah lokasi berupa URL Sharelok
+  const hasUrlMatch = selectedAddress ? selectedAddress.match(/(https?:\/\/[^\s]+)/g) : null;
+  const isUrl = !!hasUrlMatch;
+  const mapUrl = isUrl ? hasUrlMatch[0] : `https://maps.google.com/?q=${encodeURIComponent(selectedAddress)}`;
+
   return (
     <div className="animate-fadeIn h-full flex flex-col relative w-full">
       {/* AREA MAPS BESAR DI ATAS */}
       <div className="w-full h-[45vh] bg-slate-200 shrink-0 relative z-10 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.1)] rounded-b-[2rem] overflow-hidden">
-        <iframe 
-          width="100%" 
-          height="100%" 
-          style={{ border: 0 }} 
-          loading="lazy" 
-          allowFullScreen 
-          title="Peta Lokasi"
-          src={`https://maps.google.com/maps?q=${encodeURIComponent(selectedAddress)}&t=&z=15&ie=UTF8&iwloc=&output=embed`}
-        ></iframe>
         
-        {/* Tombol pintasan untuk langsung buka Google Maps asli */}
-        <button 
-          onClick={() => window.open(`https://maps.google.com/?q=${encodeURIComponent(selectedAddress)}`, '_blank')}
-          className="absolute bottom-5 right-5 bg-white text-[#f97316] font-black text-[10px] uppercase tracking-widest px-4 py-3 rounded-xl shadow-lg border border-slate-100 flex items-center gap-1.5 active:scale-95 transition-transform"
-        >
-          <Navigation size={14} /> Navigasi Rute
-        </button>
+        {isUrl ? (
+          <div className="w-full h-full flex flex-col items-center justify-center bg-slate-100 p-8 text-center border-b border-slate-200">
+            <div className="w-16 h-16 bg-orange-100 text-orange-500 rounded-full flex items-center justify-center mb-4 shadow-inner">
+              <Map size={32} />
+            </div>
+            <p className="text-base font-black text-slate-800 mb-1">Tautan Lokasi Terdeteksi</p>
+            <p className="text-[10px] text-slate-500 mb-6 leading-relaxed max-w-[200px]">Pratinjau peta tidak dapat memuat Sharelok. Silakan buka langsung di aplikasi.</p>
+            <button 
+              onClick={() => window.open(mapUrl, '_blank')}
+              className="bg-[#f97316] text-white font-black text-xs uppercase tracking-widest px-6 py-4 rounded-xl shadow-xl shadow-orange-200 active:scale-95 transition-transform"
+            >
+              Buka Google Maps
+            </button>
+          </div>
+        ) : (
+          <iframe 
+            width="100%" 
+            height="100%" 
+            style={{ border: 0 }} 
+            loading="lazy" 
+            allowFullScreen 
+            title="Peta Lokasi"
+            src={`https://maps.google.com/maps?q=${encodeURIComponent(selectedAddress)}&t=&z=15&ie=UTF8&iwloc=&output=embed`}
+          ></iframe>
+        )}
+        
+        {/* Tombol pintasan untuk langsung buka Google Maps asli (hanya muncul jika bukan layar kosong sharelok) */}
+        {!isUrl && (
+          <button 
+            onClick={() => window.open(mapUrl, '_blank')}
+            className="absolute bottom-5 right-5 bg-white text-[#f97316] font-black text-[10px] uppercase tracking-widest px-4 py-3 rounded-xl shadow-lg border border-slate-100 flex items-center gap-1.5 active:scale-95 transition-transform"
+          >
+            <Navigation size={14} /> Navigasi Rute
+          </button>
+        )}
       </div>
 
       {/* AREA DAFTAR PELANGGAN DI BAWAHNYA */}
@@ -316,6 +360,7 @@ function PetaView({ orders, formatRp, setActiveNota }) {
         ) : (
           pendingOrders.map(o => {
             const isActive = selectedAddress === o.address;
+            const itemHasUrl = o.address && o.address.match(/(https?:\/\/[^\s]+)/g);
             return (
               <div 
                 key={o.id} 
@@ -337,7 +382,9 @@ function PetaView({ orders, formatRp, setActiveNota }) {
 
                 <p className="text-[10px] font-medium text-slate-500 flex items-start gap-1 leading-snug mt-1">
                   <MapPin size={12} className={`shrink-0 mt-0.5 ${isActive ? 'text-orange-500' : 'text-slate-400'}`}/> 
-                  <span className="line-clamp-2">{o.address || '-'}</span>
+                  <span className="line-clamp-2">
+                    {itemHasUrl ? '🔗 Tautan Sharelok Terlampir' : (o.address || '-')}
+                  </span>
                 </p>
               </div>
             );
@@ -362,8 +409,12 @@ function KasirView({ services, customServices, setCustomServices, setOrders, for
   const [showCustomForm, setShowCustomForm] = useState(false);
   const [customName, setCustomName] = useState('');
   const [customPrice, setCustomPrice] = useState('');
+  const [showMap, setShowMap] = useState(false);
 
-  // Efek untuk memuat data jika sedang dalam mode edit
+  // Deteksi jika text yang diketik adalah URL
+  const addressUrlMatch = address.match(/(https?:\/\/[^\s]+)/g);
+  const hasUrlInAddress = !!addressUrlMatch;
+
   useEffect(() => {
     if (editingOrder) {
       setCustomerName(editingOrder.customerName === 'Pelanggan Umum' ? '' : editingOrder.customerName);
@@ -380,7 +431,6 @@ function KasirView({ services, customServices, setCustomServices, setOrders, for
       }
       setOrderTime(editingOrder.time || new Date().toTimeString().slice(0, 5));
     } else {
-      // Reset form jika batal edit / pesanan baru
       setCustomerName('');
       setCustomerPhone('');
       setAddress('');
@@ -411,13 +461,11 @@ function KasirView({ services, customServices, setCustomServices, setOrders, for
 
   const currentTotal = selectedItems.reduce((sum, item) => sum + getPrice(item, carSize), 0);
 
-  // Menyimpan total sementara agar bisa dibaca oleh Dock global
   useEffect(() => {
     localStorage.setItem('l_carwash_temp_total', JSON.stringify(currentTotal));
     window.dispatchEvent(new Event('updateTotalKasir'));
   }, [currentTotal]);
 
-  // Mereset total saat keluar
   useEffect(() => {
     return () => {
       localStorage.setItem('l_carwash_temp_total', '0');
@@ -444,15 +492,13 @@ function KasirView({ services, customServices, setCustomServices, setOrders, for
       carSize: selectedItems.some(i => typeof i.price === 'object') ? carSize : '-', 
       items: itemsWithPrice,
       total: currentTotal,
-      status: editingOrder ? editingOrder.status : 'Belum Lunas' // Pertahankan status jika diedit
+      status: editingOrder ? editingOrder.status : 'Belum Lunas'
     };
 
     if (editingOrder) {
-      // Update pesanan yang sudah ada
       setOrders(prev => prev.map(o => o.id === editingOrder.id ? newOrder : o));
-      setEditingOrder(null); // Keluar dari mode edit setelah simpan
+      setEditingOrder(null); 
     } else {
-      // Simpan sebagai pesanan baru
       setOrders(prev => [newOrder, ...prev]);
     }
     
@@ -501,8 +547,40 @@ function KasirView({ services, customServices, setCustomServices, setOrders, for
           </div>
           
           <div className="space-y-2">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1 flex items-center gap-1.5"><MapPin size={12}/> Alamat Lengkap</label>
-            <textarea placeholder="Masukkan alamat lokasi pelanggan..." value={address} onChange={e => setAddress(e.target.value)} rows="3" className="w-full bg-slate-50 border border-slate-100 rounded-[1.25rem] p-4 text-base font-bold outline-none focus:ring-2 focus:ring-orange-500 focus:bg-white transition-all placeholder:text-slate-300 placeholder:font-medium resize-none"></textarea>
+            <div className="flex justify-between items-center pl-1">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5"><MapPin size={12}/> Alamat / Sharelok</label>
+              {address && (
+                <button 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (hasUrlInAddress) {
+                      window.open(addressUrlMatch[0], '_blank');
+                    } else {
+                      setShowMap(!showMap);
+                    }
+                  }} 
+                  className="text-[10px] font-black text-[#f97316] bg-orange-50 px-2.5 py-1 rounded flex items-center gap-1 active:scale-95"
+                >
+                  {hasUrlInAddress ? <><Navigation size={10} /> Buka Link Map</> : <><Map size={10} /> {showMap ? 'Tutup Peta' : 'Cek Peta'}</>}
+                </button>
+              )}
+            </div>
+            <textarea placeholder="Ketik alamat atau paste Link Sharelok WA di sini..." value={address} onChange={e => setAddress(e.target.value)} rows="3" className="w-full bg-slate-50 border border-slate-100 rounded-[1.25rem] p-4 text-base font-bold outline-none focus:ring-2 focus:ring-orange-500 focus:bg-white transition-all placeholder:text-slate-300 placeholder:font-medium resize-none"></textarea>
+            
+            {/* TAMPILAN MINI MAP JIKA TOMBOL CEK PETA DIKLIK (HANYA JIKA BUKAN LINK URL) */}
+            {showMap && address && !hasUrlInAddress && (
+              <div className="w-full h-[200px] rounded-[1.25rem] overflow-hidden border border-slate-200 mt-2 bg-slate-100 relative">
+                <iframe 
+                  width="100%" 
+                  height="100%" 
+                  style={{ border: 0 }} 
+                  loading="lazy" 
+                  allowFullScreen 
+                  title="Peta Lokasi"
+                  src={`https://maps.google.com/maps?q=${encodeURIComponent(address)}&t=&z=15&ie=UTF8&iwloc=&output=embed`}
+                ></iframe>
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -728,28 +806,38 @@ function KalenderView({ orders, formatRp, setActiveNota }) {
               <CalendarDays className="mx-auto text-slate-300 mb-3" size={40}/>
               <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em]">Tidak ada jadwal</p>
             </div>
-          ) : displayOrders.map(o => (
-            <div key={o.id} className="bg-white p-5 rounded-[2rem] border border-slate-100 flex gap-4 items-center shadow-sm">
-              <div className="text-center border-r pr-5 border-slate-100 min-w-[80px]">
-                <p className="text-lg font-black text-slate-800 mb-0.5">{(o.date || '').substring(0, 5)}</p>
-                <p className="text-sm font-black text-[#f97316]">{o.time || '-'}</p>
+          ) : displayOrders.map(o => {
+            const hasUrlInAddress = o.address && o.address.match(/(https?:\/\/[^\s]+)/g);
+            return (
+              <div key={o.id} className="bg-white p-5 rounded-[2rem] border border-slate-100 flex gap-4 items-center shadow-sm">
+                <div className="text-center border-r pr-5 border-slate-100 min-w-[80px]">
+                  <p className="text-lg font-black text-slate-800 mb-0.5">{(o.date || '').substring(0, 5)}</p>
+                  <p className="text-sm font-black text-[#f97316]">{o.time || '-'}</p>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-black text-slate-800 text-base truncate">{o.plate || '-'}</p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 truncate">{o.customerName || '-'} • {o.customerPhone || '-'}</p>
+                  
+                  {/* ALAMAT BISA DIKLIK UNTUK BUKA GOOGLE MAPS */}
+                  <p 
+                    onClick={(e) => { 
+                      e.stopPropagation(); 
+                      if(o.address && o.address !== '-') {
+                        window.open(getMapLink(o.address), '_blank');
+                      } 
+                    }}
+                    className="text-[10px] font-medium text-slate-500 mt-1.5 flex items-start gap-1 leading-snug cursor-pointer hover:text-orange-500"
+                  >
+                    <MapPin size={12} className="shrink-0 text-slate-400 mt-0.5"/> 
+                    <span className="line-clamp-2 underline decoration-dashed underline-offset-2">
+                      {hasUrlInAddress ? '🔗 Tautan Sharelok Terlampir' : (o.address || '-')}
+                    </span>
+                  </p>
+                </div>
+                <button onClick={() => setActiveNota(o)} className="p-3.5 bg-slate-50 hover:bg-orange-50 text-slate-400 hover:text-orange-600 rounded-2xl transition-colors"><Printer size={20}/></button>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-black text-slate-800 text-base truncate">{o.plate || '-'}</p>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 truncate">{o.customerName || '-'} • {o.customerPhone || '-'}</p>
-                
-                {/* ALAMAT BISA DIKLIK UNTUK BUKA GOOGLE MAPS */}
-                <p 
-                  onClick={(e) => { e.stopPropagation(); if(o.address && o.address !== '-') window.open(`https://maps.google.com/?q=${encodeURIComponent(o.address)}`, '_blank'); }}
-                  className="text-[10px] font-medium text-slate-500 mt-1.5 flex items-start gap-1 leading-snug cursor-pointer hover:text-orange-500"
-                >
-                  <MapPin size={12} className="shrink-0 text-slate-400 mt-0.5"/> 
-                  <span className="line-clamp-2 underline decoration-dashed underline-offset-2">{o.address || '-'}</span>
-                </p>
-              </div>
-              <button onClick={() => setActiveNota(o)} className="p-3.5 bg-slate-50 hover:bg-orange-50 text-slate-400 hover:text-orange-600 rounded-2xl transition-colors"><Printer size={20}/></button>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>
@@ -778,46 +866,57 @@ function RiwayatView({ orders, setOrders, formatRp, setActiveNota, showConfirm, 
       
       <div className="space-y-5 pb-10">
         {filtered.length === 0 ? <p className="text-center py-20 text-xs text-slate-400 font-black uppercase tracking-[0.2em]">Data Tidak Ditemukan</p> : 
-          filtered.map(order => (
-            <div key={order.id} className="bg-white rounded-[2.5rem] p-6 shadow-sm border border-slate-100 relative overflow-hidden">
-              <div className={`absolute left-0 top-0 bottom-0 w-2.5 ${order.status === 'Lunas' ? 'bg-green-500' : 'bg-amber-500'}`}/>
-              <div className="flex justify-between items-start mb-4 pl-3">
-                <div className="pr-2">
-                  <h4 className="font-black text-slate-800 text-xl tracking-tight">{order.plate || '-'}</h4>
-                  <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1">{order.customerName || '-'} • {order.customerPhone || '-'}</p>
-                  
-                  {/* ALAMAT BISA DIKLIK UNTUK BUKA GOOGLE MAPS */}
-                  <p 
-                    onClick={(e) => { e.stopPropagation(); if(order.address && order.address !== '-') window.open(`https://maps.google.com/?q=${encodeURIComponent(order.address)}`, '_blank'); }}
-                    className="text-[10px] text-slate-500 mt-1 line-clamp-1 cursor-pointer hover:text-orange-500 flex items-center gap-1"
-                  >
-                    <MapPin size={10} className="shrink-0"/> <span className="underline decoration-dashed underline-offset-2">{order.address || '-'}</span>
-                  </p>
+          filtered.map(order => {
+            const hasUrlInAddress = order.address && order.address.match(/(https?:\/\/[^\s]+)/g);
+            return (
+              <div key={order.id} className="bg-white rounded-[2.5rem] p-6 shadow-sm border border-slate-100 relative overflow-hidden">
+                <div className={`absolute left-0 top-0 bottom-0 w-2.5 ${order.status === 'Lunas' ? 'bg-green-500' : 'bg-amber-500'}`}/>
+                <div className="flex justify-between items-start mb-4 pl-3">
+                  <div className="pr-2">
+                    <h4 className="font-black text-slate-800 text-xl tracking-tight">{order.plate || '-'}</h4>
+                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1">{order.customerName || '-'} • {order.customerPhone || '-'}</p>
+                    
+                    {/* ALAMAT BISA DIKLIK UNTUK BUKA GOOGLE MAPS */}
+                    <p 
+                      onClick={(e) => { 
+                        e.stopPropagation(); 
+                        if(order.address && order.address !== '-') {
+                          window.open(getMapLink(order.address), '_blank');
+                        } 
+                      }}
+                      className="text-[10px] text-slate-500 mt-1 line-clamp-1 cursor-pointer hover:text-orange-500 flex items-center gap-1"
+                    >
+                      <MapPin size={10} className="shrink-0"/> 
+                      <span className="underline decoration-dashed underline-offset-2">
+                        {hasUrlInAddress ? '🔗 Tautan Sharelok' : (order.address || '-')}
+                      </span>
+                    </p>
+                  </div>
+                  <span className={`text-[10px] px-3 py-1.5 rounded-xl font-black uppercase tracking-widest shrink-0 ${order.status === 'Lunas' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>{order.status}</span>
                 </div>
-                <span className={`text-[10px] px-3 py-1.5 rounded-xl font-black uppercase tracking-widest shrink-0 ${order.status === 'Lunas' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>{order.status}</span>
-              </div>
-              
-              <div className="bg-slate-50 rounded-3xl p-5 my-4 text-xs font-semibold text-slate-600 border border-slate-100">
-                <ul className="space-y-2">
-                  {(order.items || []).map((it, i) => <li key={i} className="flex justify-between"><span>• {it.name}</span> <span className="font-black text-slate-400">{formatRp(it.calculatedPrice)}</span></li>)}
-                </ul>
-              </div>
+                
+                <div className="bg-slate-50 rounded-3xl p-5 my-4 text-xs font-semibold text-slate-600 border border-slate-100">
+                  <ul className="space-y-2">
+                    {(order.items || []).map((it, i) => <li key={i} className="flex justify-between"><span>• {it.name}</span> <span className="font-black text-slate-400">{formatRp(it.calculatedPrice)}</span></li>)}
+                  </ul>
+                </div>
 
-              <div className="flex justify-between items-center pl-3">
-                <div className="flex-1 min-w-0 pr-4">
-                  <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-1">Total Tagihan</p>
-                  <p className="font-black text-orange-600 text-xl truncate">{formatRp(order.total)}</p>
-                </div>
-                <div className="flex gap-2 shrink-0">
-                  <button onClick={() => { setEditingOrder(order); setActiveTab('kasir'); }} className="p-4 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-2xl transition-colors shadow-sm"><Edit size={20}/></button>
-                  <button onClick={() => setActiveNota(order)} className="p-4 bg-slate-50 hover:bg-slate-100 text-slate-400 rounded-2xl transition-colors shadow-sm"><Printer size={20}/></button>
-                  {order.status !== 'Lunas' && (
-                    <button onClick={() => showConfirm(`Konfirmasi Lunas untuk ${formatRp(order.total)}?`, () => setOrders(prev => prev.map(o => o.id === order.id ? {...o, status: 'Lunas'} : o)))} className="bg-green-500 hover:bg-green-600 text-white text-xs font-black px-6 py-4 rounded-2xl shadow-xl shadow-green-200 active:scale-95 transition-transform">LUNASI</button>
-                  )}
+                <div className="flex justify-between items-center pl-3">
+                  <div className="flex-1 min-w-0 pr-4">
+                    <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-1">Total Tagihan</p>
+                    <p className="font-black text-orange-600 text-xl truncate">{formatRp(order.total)}</p>
+                  </div>
+                  <div className="flex gap-2 shrink-0">
+                    <button onClick={() => { setEditingOrder(order); setActiveTab('kasir'); }} className="p-4 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-2xl transition-colors shadow-sm"><Edit size={20}/></button>
+                    <button onClick={() => setActiveNota(order)} className="p-4 bg-slate-50 hover:bg-slate-100 text-slate-400 rounded-2xl transition-colors shadow-sm"><Printer size={20}/></button>
+                    {order.status !== 'Lunas' && (
+                      <button onClick={() => showConfirm(`Konfirmasi Lunas untuk ${formatRp(order.total)}?`, () => setOrders(prev => prev.map(o => o.id === order.id ? {...o, status: 'Lunas'} : o)))} className="bg-green-500 hover:bg-green-600 text-white text-xs font-black px-6 py-4 rounded-2xl shadow-xl shadow-green-200 active:scale-95 transition-transform">LUNASI</button>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))
+            );
+          })
         }
       </div>
     </div>
@@ -972,7 +1071,8 @@ function NotaModal({ order, formatRp, onClose, showAlert }) {
   const handleShareProcess = async () => {
     showAlert('Sedang memproses nota...');
 
-    const textWa = `*L CARWASH & DETAILING*\nHome Service\n\nID: ${order.id}\nTanggal: ${order.date}\n------------------------\nPelanggan: ${order.customerName}\nWA: ${order.customerPhone || '-'}\nPlat: ${order.plate}\nAlamat: ${order.address || '-'}\n------------------------\nLayanan:\n${(order.items || []).map(it => `- ${it.name}: ${formatRp(it.calculatedPrice)}`).join('\n')}\n------------------------\n*TOTAL: ${formatRp(order.total)}*\n\nTerima kasih atas kepercayaannya!`;
+    // Teks WA sekarang otomatis mengikuti nama aplikasi yang diatur di atas
+    const textWa = `*${APP_NAME_LINE1.toUpperCase()} ${APP_NAME_LINE2.toUpperCase()}*\n${APP_SUBTITLE}\n\nID: ${order.id}\nTanggal: ${order.date}\n------------------------\nPelanggan: ${order.customerName}\nWA: ${order.customerPhone || '-'}\nPlat: ${order.plate}\nAlamat: ${order.address || '-'}\n------------------------\nLayanan:\n${(order.items || []).map(it => `- ${it.name}: ${formatRp(it.calculatedPrice)}`).join('\n')}\n------------------------\n*TOTAL: ${formatRp(order.total)}*\n\nTerima kasih atas kepercayaannya!`;
     setTextWaData(textWa);
 
     try {
@@ -1045,8 +1145,8 @@ function NotaModal({ order, formatRp, onClose, showAlert }) {
               <div className="bg-slate-50 p-8 text-center relative border-b border-dashed border-slate-200">
                 <button onClick={onClose} className="absolute right-6 top-6 text-slate-400 hover:text-slate-600 print:hidden"><X size={24}/></button>
                 <div className="w-16 h-16 bg-blue-600 text-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-xl shadow-blue-200"><Receipt size={32}/></div>
-                <h2 className="font-black text-slate-800 text-xl tracking-tighter">L CARWASH</h2>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Home Service</p>
+                <h2 className="font-black text-slate-800 text-xl tracking-tighter">{APP_NAME_LINE1} {APP_NAME_LINE2.replace('&', '')}</h2>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{APP_SUBTITLE}</p>
               </div>
               
               <div className="p-8 text-xs space-y-6">
@@ -1061,10 +1161,17 @@ function NotaModal({ order, formatRp, onClose, showAlert }) {
                   
                   {/* ALAMAT DI NOTA BISA DIKLIK UNTUK BUKA GOOGLE MAPS */}
                   <p 
-                    onClick={() => { if(order.address && order.address !== '-') window.open(`https://maps.google.com/?q=${encodeURIComponent(order.address)}`, '_blank'); }}
+                    onClick={() => { 
+                      if(order.address && order.address !== '-') {
+                        window.open(getMapLink(order.address), '_blank');
+                      }
+                    }}
                     className="text-slate-500 font-medium text-[10px] mt-1.5 leading-relaxed flex items-start gap-1 cursor-pointer hover:text-orange-500"
                   >
-                     <MapPin size={12} className="shrink-0" /> <span className="underline decoration-dashed underline-offset-2">{order.address || '-'}</span>
+                     <MapPin size={12} className="shrink-0" /> 
+                     <span className="underline decoration-dashed underline-offset-2">
+                       {order.address && order.address.match(/(https?:\/\/[^\s]+)/g) ? '🔗 Tautan Sharelok Terlampir' : (order.address || '-')}
+                     </span>
                   </p>
                 </div>
 
