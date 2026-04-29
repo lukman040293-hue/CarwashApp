@@ -22,23 +22,24 @@ import {
   FileDown,
   Phone,
   Share2,
-  Download,
   Edit,
   Star,
   Map,
-  Navigation
+  Navigation,
+  Flame,
+  TrendingUp
 } from 'lucide-react';
 
 // --- PENGATURAN HEADER & LOGO ---
 // Bos bisa mengganti logo, nama usaha, dan sub-teksnya di sini:
-const APP_LOGO = 'https://images.unsplash.com/photo-1777407265534-248433dc692c?q=80&w=880&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'; // Ganti dengan link gambar/logo Bos
-const APP_NAME_LINE1 = 'Carwash & Detailing';       // Nama Baris Atas
-const APP_NAME_LINE2 = '';     // Nama Baris Bawah (Bisa dikosongkan jika tidak perlu)
-const APP_SUBTITLE = 'Home Service';      // Teks kecil di bawah judul
+const APP_LOGO = 'https://images.unsplash.com/photo-1777407265534-248433dc692c?q=80&w=880&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'; 
+const APP_NAME_LINE1 = 'Carwash & Detailing';       
+const APP_NAME_LINE2 = '';     
+const APP_SUBTITLE = 'Home Service';      
 
 // --- DATA MASTER LAYANAN (Diperbarui dengan Foto Asli) ---
 const SERVICES = [
-  { id: 'w1', name: 'Basic Wash', category: 'Carwash', price: 150000, image: 'https://images.unsplash.com/photo-1777400924439-3e5ab46a9373?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', desc: 'Prewash, Handwash, Vacum Interior, Dressing Ban, Lap Mircofiber, Finishing' },
+  { id: 'w1', name: 'Basic Wash', category: 'Carwash', price: 150000, image: 'https://images.unsplash.com/photo-1777400924439-3e5ab46a9373?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', bestSeller: true, desc: 'Prewash, Handwash, Vacum Interior, Dressing Ban, Lap Mircofiber, Finishing' },
   { id: 'w2', name: 'Premium Wash', category: 'Carwash', price: { Kecil: 300000, Besar: 315000 }, image: 'https://images.unsplash.com/photo-1777398801194-b43d80625efd?q=80&w=880&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', recommended: true, desc: 'Include Detail Wash, Jamur Body + Noda Aspal (RINGAN), Window Cleaning, Emblem Logo, Sela Pintu Cleaning, Interior Detailing Level 1' },
   { id: 'w3', name: 'Detail Wash', category: 'Carwash', price: 200000, image: 'https://images.unsplash.com/photo-1777400924425-29aa6b51e01b?q=80&w=1476&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', desc: 'Basic Wash, Dressing Interior, Door Jamb / Ketiak pintu' },
   { id: 'd1', name: 'Wash(Cuci) Engine', category: 'Engine', price: { Kecil: 125000, Besar: 145000 }, image: 'https://images.unsplash.com/photo-1777401359919-047b5f0cb0a9?q=80&w=1632&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', desc: 'Pembersihan debu ruang mesin.' },
@@ -55,13 +56,11 @@ const getPrice = (item, size) => {
 // --- HELPER: DETEKSI SHARELOK WA / URL PETA ---
 const getMapLink = (address) => {
   if (!address || address === '-') return null;
-  // Cek apakah di dalam teks ada link (http:// atau https://)
   const urlRegex = /(https?:\/\/[^\s]+)/g;
   const match = address.match(urlRegex);
   if (match) {
-    return match[0]; // Kembalikan link sharelok tersebut
+    return match[0]; 
   }
-  // Jika teks biasa (bukan link), gunakan pencarian Google Maps biasa
   return `https://maps.google.com/?q=${encodeURIComponent(address)}`;
 };
 
@@ -70,11 +69,8 @@ export default function App() {
   const [activeNota, setActiveNota] = useState(null);
   const [dialog, setDialog] = useState(null);
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
-  
-  // State untuk menyimpan pesanan yang sedang diedit
   const [editingOrder, setEditingOrder] = useState(null);
   
-  // State Layanan Custom & Order dengan LocalStorage
   const [customServices, setCustomServices] = useState(() => {
     try {
       const saved = localStorage.getItem('l_carwash_custom_services');
@@ -104,11 +100,10 @@ export default function App() {
   useEffect(() => {
     const metaThemeColor = document.querySelector("meta[name=theme-color]");
     if (metaThemeColor) {
-      metaThemeColor.setAttribute("content", "#000000"); // Diubah ke Hitam
+      metaThemeColor.setAttribute("content", "#000000"); 
     }
   }, []);
 
-  // LOGIKA PINTAR: Sembunyikan Navigasi saat Keyboard Terbuka
   useEffect(() => {
     let timeout;
     const handleFocusIn = (e) => {
@@ -161,44 +156,37 @@ export default function App() {
         .animate-fadeIn { animation: fadeIn 0.3s ease-out forwards; }
       `}} />
 
-      {/* HEADER SECTION (Tema Hitam dengan Shadow Simpel) HANYA TAMPIL DI KASIR */}
+      {/* HEADER SECTION */}
       {activeTab === 'kasir' && (
         <div className="shrink-0 z-10 w-full">
-          {/* Padding dan margin dikurangi agar lebih pendek */}
           <div className="bg-black rounded-b-[1.5rem] px-5 pt-5 pb-4 flex flex-col justify-center shadow-[0_4px_15px_rgba(0,0,0,0.08)] border-b border-slate-800 text-white relative overflow-hidden">
             <div className="absolute -right-8 -top-8 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
             <div className="absolute -left-10 -bottom-10 w-24 h-24 bg-slate-800/50 rounded-full blur-xl"></div>
             <div className="flex justify-between items-center relative z-10">
-              
               <div className="flex items-center gap-3.5">
-                {/* AREA GAMBAR ICON / LOGO (Disesuaikan ukurannya agar pas) */}
                 <img 
                   src={APP_LOGO} 
                   alt="Logo Aplikasi" 
                   className="w-14 h-14 sm:w-16 sm:h-16 object-cover drop-shadow-xl shrink-0 rounded-xl"
                 />
-                
                 <div className="flex flex-col justify-center">
                   <h1 className="text-sm sm:text-base font-black tracking-[0.1em] text-white uppercase drop-shadow-md leading-tight">
                     {APP_NAME_LINE1}
-                    {/* Hanya tambah enter jika APP_NAME_LINE2 ada isinya */}
                     {APP_NAME_LINE2 && <><br/>{APP_NAME_LINE2}</>}
                   </h1>
                   <p className="text-[10px] sm:text-xs font-black tracking-[0.25em] text-yellow-200 mt-1 uppercase">{APP_SUBTITLE}</p>
                 </div>
               </div>
-
               <div className="bg-white/10 p-2 rounded-xl border border-white/20 backdrop-blur-md shadow-sm shrink-0">
                 <User size={18} className="text-white"/>
               </div>
-
             </div>
           </div>
         </div>
       )}
 
       {/* CONTENT AREA */}
-      <div className={`flex-1 overflow-y-auto hide-scrollbar ${activeTab === 'peta' ? 'px-0 pt-0 pb-32' : 'px-5'} ${activeTab === 'kasir' ? 'pb-[260px]' : (activeTab !== 'peta' ? 'pb-32' : '')} ${activeTab !== 'kasir' && activeTab !== 'peta' ? 'pt-8' : 'pt-5'} w-full relative`}>
+      <div className={`flex-1 overflow-y-auto hide-scrollbar ${activeTab === 'peta' ? 'px-0 pt-0 pb-32' : 'px-4 sm:px-5'} ${activeTab === 'kasir' ? 'pb-[260px]' : (activeTab !== 'peta' ? 'pb-32' : '')} ${activeTab !== 'kasir' && activeTab !== 'peta' ? 'pt-8' : 'pt-5'} w-full relative`}>
         {activeTab === 'kasir' && <KasirView services={SERVICES} customServices={customServices} setCustomServices={setCustomServices} setOrders={setOrders} formatRp={formatRp} setActiveTab={setActiveTab} setActiveNota={setActiveNota} showAlert={showAlert} isKeyboardOpen={isKeyboardOpen} editingOrder={editingOrder} setEditingOrder={setEditingOrder} />}
         {activeTab === 'peta' && <PetaView orders={orders} formatRp={formatRp} setActiveNota={setActiveNota} />}
         {activeTab === 'kalender' && <KalenderView orders={orders} formatRp={formatRp} setActiveNota={setActiveNota} />}
@@ -209,9 +197,8 @@ export default function App() {
       {/* STRUKTUR DOCK MENYATU */}
       <div className={`fixed bottom-0 left-0 right-0 w-full z-[60] px-3 pb-6 transition-transform duration-300 ease-in-out pointer-events-none ${isKeyboardOpen ? 'translate-y-[150%] opacity-0' : 'translate-y-0 opacity-100'}`}>
         
-        {/* TOTAL HARGA DOCK (Hanya muncul jika di tab kasir) */}
         {activeTab === 'kasir' && (
-          <div className="mx-auto max-w-lg bg-white pt-4 px-5 pb-[4.5rem] -mb-[3.5rem] rounded-t-[2rem] rounded-b-[2rem] shadow-[0_-4px_15px_rgba(0,0,0,0.05)] border border-slate-200 flex justify-between items-center pointer-events-auto relative">
+          <div className="mx-auto max-w-lg bg-white pt-4 px-4 sm:px-5 pb-[4.5rem] -mb-[3.5rem] rounded-t-[2rem] rounded-b-[2rem] shadow-[0_-4px_15px_rgba(0,0,0,0.05)] border border-slate-200 flex justify-between items-center pointer-events-auto relative">
             <div className="flex-1 min-w-0 pr-4">
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Total Tagihan</p>
               <p className="text-2xl font-black text-orange-600 leading-none tracking-tight truncate">
@@ -227,7 +214,7 @@ export default function App() {
           </div>
         )}
 
-        {/* NAVIGASI BAWAH (Disesuaikan agar muat 5 icon) */}
+        {/* NAVIGASI BAWAH */}
         <div className="mx-auto max-w-lg bg-[#f97316] flex justify-between items-center px-1.5 py-2 rounded-[2rem] shadow-md shadow-orange-900/20 pointer-events-auto relative z-[61]">
           <NavItem icon={<ClipboardList />} label="Kasir" isActive={activeTab === 'kasir'} onClick={() => setActiveTab('kasir')} />
           <NavItem icon={<Map />} label="Peta" isActive={activeTab === 'peta'} onClick={() => setActiveTab('peta')} />
@@ -277,7 +264,6 @@ function KasirTotalCalculator({ formatRp }) {
   return <>{formatRp(total)}</>;
 }
 
-// Menyesuaikan ukuran tombol agar 5 tab muat dengan sempurna di layar HP
 function NavItem({ icon, label, isActive, onClick }) {
   return (
     <button onClick={onClick} className={`flex items-center justify-center transition-all duration-300 ${isActive ? 'bg-white text-[#f97316] px-3.5 sm:px-5 py-3 rounded-2xl font-black shadow-lg scale-105' : 'text-white/70 p-2.5 hover:text-white active:scale-95'}`}>
@@ -287,28 +273,22 @@ function NavItem({ icon, label, isActive, onClick }) {
   );
 }
 
-// --- VIEW: PETA (HALAMAN BARU KHUSUS PETA) ---
+// --- VIEW: PETA ---
 function PetaView({ orders, formatRp, setActiveNota }) {
-  // Hanya ambil pesanan yang belum lunas sebagai target kunjungan hari ini
   const pendingOrders = orders.filter(o => o.status !== 'Lunas');
-  
-  // Default lokasi ke pesanan pertama, atau jika tidak ada ke titik acak umum
   const [selectedAddress, setSelectedAddress] = useState(
     pendingOrders.length > 0 && pendingOrders[0].address && pendingOrders[0].address !== '-' 
       ? pendingOrders[0].address 
       : 'Indonesia'
   );
 
-  // Cek apakah lokasi berupa URL Sharelok
   const hasUrlMatch = selectedAddress ? selectedAddress.match(/(https?:\/\/[^\s]+)/g) : null;
   const isUrl = !!hasUrlMatch;
   const mapUrl = isUrl ? hasUrlMatch[0] : `https://maps.google.com/?q=${encodeURIComponent(selectedAddress)}`;
 
   return (
     <div className="animate-fadeIn h-full flex flex-col relative w-full">
-      {/* AREA MAPS BESAR DI ATAS */}
       <div className="w-full h-[45vh] bg-slate-200 shrink-0 relative z-10 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.1)] rounded-b-[2rem] overflow-hidden">
-        
         {isUrl ? (
           <div className="w-full h-full flex flex-col items-center justify-center bg-slate-100 p-8 text-center border-b border-slate-200">
             <div className="w-16 h-16 bg-orange-100 text-orange-500 rounded-full flex items-center justify-center mb-4 shadow-inner">
@@ -335,7 +315,6 @@ function PetaView({ orders, formatRp, setActiveNota }) {
           ></iframe>
         )}
         
-        {/* Tombol pintasan untuk langsung buka Google Maps asli (hanya muncul jika bukan layar kosong sharelok) */}
         {!isUrl && (
           <button 
             onClick={() => window.open(mapUrl, '_blank')}
@@ -346,7 +325,6 @@ function PetaView({ orders, formatRp, setActiveNota }) {
         )}
       </div>
 
-      {/* AREA DAFTAR PELANGGAN DI BAWAHNYA */}
       <div className="flex-1 overflow-y-auto px-5 pt-8 pb-32 space-y-4">
         <div className="flex justify-between items-center mb-2">
           <h3 className="font-black text-sm text-slate-800 flex items-center gap-2">
@@ -415,7 +393,6 @@ function KasirView({ services, customServices, setCustomServices, setOrders, for
   const [customPrice, setCustomPrice] = useState('');
   const [showMap, setShowMap] = useState(false);
 
-  // Deteksi jika text yang diketik adalah URL
   const addressUrlMatch = address.match(/(https?:\/\/[^\s]+)/g);
   const hasUrlInAddress = !!addressUrlMatch;
 
@@ -513,7 +490,6 @@ function KasirView({ services, customServices, setCustomServices, setOrders, for
   return (
     <div className="animate-fadeIn space-y-6 relative">
       
-      {/* PEMBERITAHUAN MODE EDIT */}
       {editingOrder && (
         <div className="bg-blue-100 text-blue-800 p-5 rounded-[2rem] flex justify-between items-center border border-blue-200 shadow-sm mb-4">
           <div>
@@ -532,7 +508,7 @@ function KasirView({ services, customServices, setCustomServices, setOrders, for
           Pelanggan & Kendaraan
         </h2>
         
-        <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 space-y-5">
+        <div className="bg-white p-5 sm:p-6 rounded-[2rem] shadow-sm border border-slate-100 space-y-5">
           <div className="space-y-2">
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5 pl-1"><Calendar size={12}/> Tanggal</label>
             <input type="date" value={orderDate} onChange={e => setOrderDate(e.target.value)} className="w-full bg-slate-50 border border-slate-100 rounded-[1.25rem] p-4 text-base font-bold outline-none focus:ring-2 focus:ring-orange-500 focus:bg-white transition-all text-slate-700"/>
@@ -571,7 +547,6 @@ function KasirView({ services, customServices, setCustomServices, setOrders, for
             </div>
             <textarea placeholder="Ketik alamat atau paste Link Sharelok WA di sini..." value={address} onChange={e => setAddress(e.target.value)} rows="3" className="w-full bg-slate-50 border border-slate-100 rounded-[1.25rem] p-4 text-base font-bold outline-none focus:ring-2 focus:ring-orange-500 focus:bg-white transition-all placeholder:text-slate-300 placeholder:font-medium resize-none"></textarea>
             
-            {/* TAMPILAN MINI MAP JIKA TOMBOL CEK PETA DIKLIK (HANYA JIKA BUKAN LINK URL) */}
             {showMap && address && !hasUrlInAddress && (
               <div className="w-full h-[200px] rounded-[1.25rem] overflow-hidden border border-slate-200 mt-2 bg-slate-100 relative">
                 <iframe 
@@ -598,7 +573,6 @@ function KasirView({ services, customServices, setCustomServices, setOrders, for
         </div>
       </div>
 
-      {/* SECTION DAFTAR LAYANAN (DIPERBESAR) */}
       <div className="space-y-6 pt-4">
         {Object.keys(groupedServices).map(cat => (
           <div key={cat} className="space-y-4">
@@ -620,15 +594,23 @@ function KasirView({ services, customServices, setCustomServices, setOrders, for
                     
                     <div className="flex flex-row items-stretch min-h-[140px]">
                       
-                      {/* AREA KIRI: THUMBNAIL (DILEBARKAN) */}
-                      <div className="w-[130px] sm:w-[150px] shrink-0 relative bg-slate-100 border-r border-slate-100">
+                      <div className="w-[110px] sm:w-[150px] shrink-0 relative bg-slate-100 border-r border-slate-100">
                         <img src={itemImage} alt={item.name} className="absolute inset-0 w-full h-full object-cover" />
                       </div>
 
-                      {/* AREA KANAN: KONTEN */}
                       <div className="flex-1 min-w-0 p-4 sm:p-5 pr-14 flex flex-col justify-center">
                         
-                        {/* LABEL REKOMENDASI 5 BINTANG */}
+                        {item.bestSeller && (
+                          <div className="flex items-center gap-1.5 mb-1.5">
+                            <div className="flex text-red-500">
+                              <Flame size={14} fill="currentColor" strokeWidth={0} />
+                            </div>
+                            <span className="text-[9px] font-black text-red-600 uppercase tracking-widest bg-red-100 px-2 py-0.5 rounded-md shadow-sm border border-red-200/50">
+                              Banyak Dipilih
+                            </span>
+                          </div>
+                        )}
+
                         {item.recommended && (
                           <div className="flex items-center gap-1.5 mb-1.5">
                             <div className="flex text-yellow-400">
@@ -715,7 +697,6 @@ function KasirView({ services, customServices, setCustomServices, setOrders, for
         )}
       </div>
 
-      {/* Tombol Tersembunyi untuk Menangkap Trigger dari Dock Global */}
       <button id="btn-simpan-kasir" onClick={handleSimpan} className="hidden"></button>
     </div>
   );
@@ -813,19 +794,18 @@ function KalenderView({ orders, formatRp, setActiveNota }) {
           ) : displayOrders.map(o => {
             const hasUrlInAddress = o.address && o.address.match(/(https?:\/\/[^\s]+)/g);
             return (
-              <div key={o.id} className="bg-white p-5 rounded-[2rem] border border-slate-100 flex gap-4 items-center shadow-sm">
+              <div key={o.id} className="bg-white p-5 rounded-[2rem] border border-slate-100 flex gap-4 items-center shadow-sm relative overflow-hidden">
+                <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${o.status === 'Lunas' ? 'bg-green-500' : 'bg-orange-500'}`}/>
                 
-                {/* TANGGAL DIPERBESAR DAN JAM TETAP ORANYE */}
-                <div className="text-center border-r pr-4 sm:pr-5 border-slate-100 min-w-[90px] flex flex-col justify-center">
+                <div className="text-center border-r pr-4 sm:pr-5 border-slate-100 min-w-[90px] flex flex-col justify-center pl-2">
                   <p className="text-3xl font-black text-slate-900 tracking-tighter leading-none mb-1.5">{(o.date || '').substring(0, 5)}</p>
-                  <p className="text-xs font-black text-[#f97316]">{o.time || '-'}</p>
+                  <p className="text-xs font-bold text-[#f97316]">{o.time || '-'}</p>
                 </div>
                 
                 <div className="flex-1 min-w-0">
-                  <p className="font-black text-slate-800 text-base truncate">{o.plate || '-'}</p>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 truncate">{o.customerName || '-'} • {o.customerPhone || '-'}</p>
+                  <p className="font-black text-slate-800 text-lg truncate mb-0.5">{o.plate || '-'}</p>
+                  <p className="text-xs font-medium text-slate-500 truncate">{o.customerName || '-'} • {o.customerPhone || '-'}</p>
                   
-                  {/* ALAMAT BISA DIKLIK UNTUK BUKA GOOGLE MAPS */}
                   <p 
                     onClick={(e) => { 
                       e.stopPropagation(); 
@@ -833,15 +813,15 @@ function KalenderView({ orders, formatRp, setActiveNota }) {
                         window.open(getMapLink(o.address), '_blank');
                       } 
                     }}
-                    className="text-[10px] font-medium text-slate-500 mt-1.5 flex items-start gap-1 leading-snug cursor-pointer hover:text-orange-500"
+                    className="text-xs font-medium text-slate-400 mt-2 flex items-start gap-1.5 leading-snug cursor-pointer hover:text-orange-500 transition-colors"
                   >
-                    <MapPin size={12} className="shrink-0 text-slate-400 mt-0.5"/> 
-                    <span className="line-clamp-2 underline decoration-dashed underline-offset-2">
-                      {hasUrlInAddress ? '🔗 Tautan Sharelok Terlampir' : (o.address || '-')}
+                    <MapPin size={14} className="shrink-0 mt-0.5"/> 
+                    <span className="line-clamp-2 underline decoration-dashed underline-offset-4 decoration-slate-300">
+                      {hasUrlInAddress ? 'Tautan Sharelok Terlampir' : (o.address || '-')}
                     </span>
                   </p>
                 </div>
-                <button onClick={() => setActiveNota(o)} className="p-3.5 bg-slate-50 hover:bg-orange-50 text-slate-400 hover:text-orange-600 rounded-2xl transition-colors"><Printer size={20}/></button>
+                <button onClick={() => setActiveNota(o)} className="p-3 bg-slate-50 hover:bg-orange-50 text-slate-400 hover:text-orange-600 rounded-xl transition-colors"><Printer size={20}/></button>
               </div>
             );
           })}
@@ -876,48 +856,60 @@ function RiwayatView({ orders, setOrders, formatRp, setActiveNota, showConfirm, 
           filtered.map(order => {
             const hasUrlInAddress = order.address && order.address.match(/(https?:\/\/[^\s]+)/g);
             return (
-              <div key={order.id} className="bg-white rounded-[2.5rem] p-6 shadow-sm border border-slate-100 relative overflow-hidden">
-                <div className={`absolute left-0 top-0 bottom-0 w-2.5 ${order.status === 'Lunas' ? 'bg-green-500' : 'bg-amber-500'}`}/>
-                <div className="flex justify-between items-start mb-4 pl-3">
-                  <div className="pr-2">
-                    <h4 className="font-black text-slate-800 text-xl tracking-tight">{order.plate || '-'}</h4>
-                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1">{order.customerName || '-'} • {order.customerPhone || '-'}</p>
-                    
-                    {/* ALAMAT BISA DIKLIK UNTUK BUKA GOOGLE MAPS */}
-                    <p 
-                      onClick={(e) => { 
-                        e.stopPropagation(); 
-                        if(order.address && order.address !== '-') {
-                          window.open(getMapLink(order.address), '_blank');
-                        } 
-                      }}
-                      className="text-[10px] text-slate-500 mt-1 line-clamp-1 cursor-pointer hover:text-orange-500 flex items-center gap-1"
-                    >
-                      <MapPin size={10} className="shrink-0"/> 
-                      <span className="underline decoration-dashed underline-offset-2">
-                        {hasUrlInAddress ? '🔗 Tautan Sharelok' : (order.address || '-')}
-                      </span>
-                    </p>
+              <div key={order.id} className="bg-white rounded-[2rem] p-5 sm:p-6 shadow-sm border border-slate-100 relative overflow-hidden flex flex-col gap-4">
+                <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${order.status === 'Lunas' ? 'bg-green-500' : 'bg-orange-500'}`}/>
+                
+                <div className="flex justify-between items-start pl-2">
+                  <div className="pr-3">
+                    <h4 className="font-black text-slate-800 text-xl sm:text-2xl tracking-tight mb-1">{order.plate || '-'}</h4>
+                    <p className="text-xs font-medium text-slate-500">{order.customerName || '-'} • {order.customerPhone || '-'}</p>
                   </div>
-                  <span className={`text-[10px] px-3 py-1.5 rounded-xl font-black uppercase tracking-widest shrink-0 ${order.status === 'Lunas' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>{order.status}</span>
+                  <span className={`text-[10px] px-3 py-1.5 rounded-xl font-bold uppercase tracking-wider shrink-0 ${order.status === 'Lunas' ? 'bg-green-50 text-green-600' : 'bg-orange-50 text-orange-600'}`}>
+                    {order.status}
+                  </span>
                 </div>
                 
-                <div className="bg-slate-50 rounded-3xl p-5 my-4 text-xs font-semibold text-slate-600 border border-slate-100">
-                  <ul className="space-y-2">
-                    {(order.items || []).map((it, i) => <li key={i} className="flex justify-between"><span>• {it.name}</span> <span className="font-black text-slate-400">{formatRp(it.calculatedPrice)}</span></li>)}
-                  </ul>
+                <div className="pl-2">
+                  <p 
+                    onClick={(e) => { 
+                      e.stopPropagation(); 
+                      if(order.address && order.address !== '-') {
+                        window.open(getMapLink(order.address), '_blank');
+                      } 
+                    }}
+                    className="text-xs font-medium text-slate-500 flex items-start gap-1.5 cursor-pointer hover:text-orange-500 transition-colors"
+                  >
+                    <MapPin size={14} className="shrink-0 mt-0.5 text-slate-400"/> 
+                    <span className="line-clamp-2 underline decoration-dashed underline-offset-4 decoration-slate-300">
+                      {hasUrlInAddress ? 'Tautan Sharelok' : (order.address || '-')}
+                    </span>
+                  </p>
+                </div>
+                
+                <div className="pl-2 pr-2">
+                  <div className="bg-slate-50/80 rounded-2xl p-4 text-xs font-medium text-slate-600 border border-slate-100/50">
+                    <ul className="space-y-2.5">
+                      {(order.items || []).map((it, i) => (
+                        <li key={i} className="flex justify-between items-center gap-3">
+                          <span className="truncate text-slate-500">• {it.name}</span> 
+                          <span className="font-bold text-slate-700 whitespace-nowrap">{formatRp(it.calculatedPrice)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
 
-                <div className="flex justify-between items-center pl-3">
-                  <div className="flex-1 min-w-0 pr-4">
-                    <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-1">Total Tagihan</p>
-                    <p className="font-black text-orange-600 text-xl truncate">{formatRp(order.total)}</p>
+                <div className="flex justify-between items-end pl-2 pt-2 border-t border-slate-50 mt-1 gap-4">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Tagihan</p>
+                    <p className="font-black text-slate-800 text-lg sm:text-xl truncate">{formatRp(order.total)}</p>
                   </div>
+                  
                   <div className="flex gap-2 shrink-0">
-                    <button onClick={() => { setEditingOrder(order); setActiveTab('kasir'); }} className="p-4 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-2xl transition-colors shadow-sm"><Edit size={20}/></button>
-                    <button onClick={() => setActiveNota(order)} className="p-4 bg-slate-50 hover:bg-slate-100 text-slate-400 rounded-2xl transition-colors shadow-sm"><Printer size={20}/></button>
+                    <button onClick={() => { setEditingOrder(order); setActiveTab('kasir'); }} className="p-3 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-xl transition-colors shadow-sm"><Edit size={18}/></button>
+                    <button onClick={() => setActiveNota(order)} className="p-3 bg-slate-50 hover:bg-slate-100 text-slate-500 rounded-xl transition-colors shadow-sm"><Printer size={18}/></button>
                     {order.status !== 'Lunas' && (
-                      <button onClick={() => showConfirm(`Konfirmasi Lunas untuk ${formatRp(order.total)}?`, () => setOrders(prev => prev.map(o => o.id === order.id ? {...o, status: 'Lunas'} : o)))} className="bg-green-500 hover:bg-green-600 text-white text-xs font-black px-6 py-4 rounded-2xl shadow-xl shadow-green-200 active:scale-95 transition-transform">LUNASI</button>
+                      <button onClick={() => showConfirm(`Konfirmasi Lunas untuk ${formatRp(order.total)}?`, () => setOrders(prev => prev.map(o => o.id === order.id ? {...o, status: 'Lunas'} : o)))} className="bg-green-500 hover:bg-green-600 text-white text-xs font-bold px-5 py-3 rounded-xl shadow-md shadow-green-200 active:scale-95 transition-transform">LUNAS</button>
                     )}
                   </div>
                 </div>
@@ -930,7 +922,7 @@ function RiwayatView({ orders, setOrders, formatRp, setActiveNota, showConfirm, 
   );
 }
 
-// --- VIEW: LAPORAN ---
+// --- VIEW: LAPORAN (DASHBOARD) ---
 function LaporanView({ orders, formatRp, showAlert }) {
   const [filterMonth, setFilterMonth] = useState(() => {
     const d = new Date();
@@ -943,14 +935,26 @@ function LaporanView({ orders, formatRp, showAlert }) {
   const monthStr = month ? `${month}/${year}` : ''; 
   const displayMonthName = month ? `${monthNames[parseInt(month)-1]} ${year}` : '';
 
-  const lunasAll = orders.filter(o => o.status === 'Lunas');
-  const totalAll = lunasAll.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+  const monthOrders = orders.filter(o => o.date && o.date.endsWith(`/${monthStr}`));
+  
+  const monthCompleted = monthOrders.filter(o => o.status === 'Lunas');
+  const monthPending = monthOrders.filter(o => o.status !== 'Lunas');
+  const totalMonthRevenue = monthCompleted.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
 
-  const monthOrders = orders.filter(o => o.date && o.date.endsWith(`/${monthStr}`) && o.status === 'Lunas');
-  const totalMonth = monthOrders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+  const serviceCounts = {};
+  monthOrders.forEach(o => {
+    (o.items || []).forEach(item => {
+      serviceCounts[item.name] = (serviceCounts[item.name] || 0) + 1;
+    });
+  });
+  
+  const popularServices = Object.entries(serviceCounts)
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5); 
 
   const handleDownloadPDF = async () => {
-    if (monthOrders.length === 0) return showAlert("Tidak ada data transaksi bulan ini untuk dijadikan PDF.");
+    if (monthCompleted.length === 0) return showAlert("Tidak ada data transaksi lunas bulan ini untuk dijadikan PDF.");
     
     showAlert("Sedang mengunduh file PDF...");
 
@@ -989,7 +993,7 @@ function LaporanView({ orders, formatRp, showAlert }) {
       const tableColumn = ["Tanggal", "ID Trx", "Pelanggan", "Plat Nomor", "Nominal"];
       const tableRows = [];
 
-      monthOrders.forEach(order => {
+      monthCompleted.forEach(order => {
         const orderData = [
           order.date || "-",
           order.id || "-",
@@ -1006,7 +1010,7 @@ function LaporanView({ orders, formatRp, showAlert }) {
         body: tableRows,
         theme: 'grid',
         headStyles: { fillColor: [249, 115, 22] },
-        foot: [["", "", "", "TOTAL", formatRp(totalMonth)]],
+        foot: [["", "", "", "TOTAL PENDAPATAN", formatRp(totalMonthRevenue)]],
         footStyles: { fillColor: [241, 245, 249], textColor: [0, 0, 0], fontStyle: 'bold' },
         styles: { fontSize: 9 }
       });
@@ -1019,51 +1023,97 @@ function LaporanView({ orders, formatRp, showAlert }) {
 
   return (
     <div className="animate-fadeIn space-y-6 pb-10">
-      <div className="bg-slate-900 p-8 rounded-[3rem] text-white shadow-2xl relative overflow-hidden">
+      
+      <div className="bg-white p-5 rounded-[2rem] border border-slate-100 shadow-sm flex justify-between items-center gap-4">
+        <div>
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Dashboard Periode</p>
+          <p className="font-bold text-slate-800 text-sm">{displayMonthName}</p>
+        </div>
+        <input 
+          type="month" 
+          value={filterMonth} 
+          onChange={e => setFilterMonth(e.target.value)} 
+          className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-bold outline-none focus:ring-2 focus:ring-orange-500 text-slate-700"
+        />
+      </div>
+
+      <div className="bg-slate-900 p-8 rounded-[2.5rem] text-white shadow-xl relative overflow-hidden">
         <Wallet className="absolute -right-6 -top-6 w-40 h-40 text-white/5 rotate-12" />
         <div className="relative z-10">
-          <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em] mb-2">Total Semua Pendapatan</p>
-          <h3 className="text-4xl font-black tracking-tighter truncate">{formatRp(totalAll)}</h3>
-          <p className="text-xs text-orange-400 font-bold mt-4">Total dari {lunasAll.length} transaksi lunas</p>
+          <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em] mb-2">Total Pendapatan</p>
+          <h3 className="text-4xl font-black tracking-tighter truncate text-orange-400">{formatRp(totalMonthRevenue)}</h3>
+          <p className="text-xs text-slate-300 font-medium mt-2 flex items-center gap-1">
+            <CheckCircle size={14} className="text-green-400"/> Dari {monthCompleted.length} transaksi selesai
+          </p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="bg-orange-50 p-6 rounded-[2rem] border border-orange-100 flex flex-col justify-center">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="p-1.5 bg-orange-200 rounded-full text-orange-600"><Clock size={16} /></div>
+            <p className="text-[10px] font-black text-orange-600 uppercase tracking-widest">Antrian</p>
+          </div>
+          <p className="text-4xl font-black text-orange-600">{monthPending.length}</p>
+          <p className="text-[10px] font-bold text-orange-400 mt-1 uppercase tracking-wider">Unit Diproses</p>
+        </div>
+        
+        <div className="bg-green-50 p-6 rounded-[2rem] border border-green-100 flex flex-col justify-center">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="p-1.5 bg-green-200 rounded-full text-green-600"><CheckCircle size={16} /></div>
+            <p className="text-[10px] font-black text-green-600 uppercase tracking-widest">Selesai</p>
+          </div>
+          <p className="text-4xl font-black text-green-600">{monthCompleted.length}</p>
+          <p className="text-[10px] font-bold text-green-500 mt-1 uppercase tracking-wider">Unit Selesai</p>
         </div>
       </div>
       
-      <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-5">
+      <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-4">
         <div className="flex items-center gap-3 mb-2">
-          <div className="p-2 bg-orange-100 text-orange-600 rounded-xl"><FileText size={20}/></div>
-          <h3 className="font-black text-slate-800 text-lg">Cetak Laporan</h3>
-        </div>
-        
-        <div className="space-y-2">
-          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Pilih Bulan</label>
-          <input 
-            type="month" 
-            value={filterMonth} 
-            onChange={e => setFilterMonth(e.target.value)} 
-            className="w-full bg-slate-50 border border-slate-100 rounded-[1.25rem] p-4 text-base font-bold outline-none focus:ring-2 focus:ring-orange-500 transition-all text-slate-700"
-          />
-        </div>
-
-        <div className="bg-orange-50 rounded-3xl p-5 flex justify-between items-center border border-orange-100">
+          <div className="p-2 bg-blue-100 text-blue-600 rounded-xl"><TrendingUp size={20}/></div>
           <div>
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Omzet {displayMonthName}</p>
-            <p className="text-xl font-black text-orange-600">{formatRp(totalMonth)}</p>
-          </div>
-          <div className="text-right border-l border-orange-200 pl-4">
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Unit Selesai</p>
-            <p className="text-xl font-black text-orange-600">{monthOrders.length}</p>
+            <h3 className="font-black text-slate-800 text-base leading-none mb-1">Layanan Terpopuler</h3>
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Paling banyak dipilih</p>
           </div>
         </div>
 
-        <div className="flex mt-2">
-          <button 
-            onClick={handleDownloadPDF} 
-            className="w-full bg-slate-800 hover:bg-slate-900 text-white font-black py-4 rounded-2xl shadow-xl shadow-slate-200 active:scale-95 transition-transform flex flex-row items-center justify-center gap-2 text-xs uppercase tracking-widest"
-          >
-            <FileDown size={18}/> Unduh PDF
-          </button>
-        </div>
+        {popularServices.length === 0 ? (
+          <p className="text-xs text-slate-400 text-center py-6 font-medium">Belum ada layanan yang dipesan bulan ini.</p>
+        ) : (
+          <div className="space-y-4 pt-2">
+            {popularServices.map((srv, idx) => {
+              const maxCount = popularServices[0].count;
+              const percentage = Math.round((srv.count / maxCount) * 100);
+              
+              return (
+                <div key={idx} className="relative">
+                  <div className="flex justify-between items-end text-xs font-bold mb-1.5">
+                    <span className="text-slate-700 truncate pr-4">{srv.name}</span>
+                    <span className="text-orange-600 bg-orange-50 px-2 py-0.5 rounded shadow-sm">{srv.count} unit</span>
+                  </div>
+                  <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+                    <div className="bg-gradient-to-r from-orange-400 to-orange-500 h-full rounded-full transition-all duration-1000" style={{ width: `${percentage}%` }}></div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
+
+      <div className="bg-white p-5 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col items-center text-center gap-3">
+        <div>
+          <p className="font-black text-slate-800 text-sm">Unduh Rekap Bulanan</p>
+          <p className="text-[10px] text-slate-400 font-medium">Cetak laporan pemasukan untuk diarsipkan.</p>
+        </div>
+        <button 
+          onClick={handleDownloadPDF} 
+          className="w-full bg-slate-800 hover:bg-slate-900 text-white font-black py-4 rounded-2xl shadow-xl shadow-slate-200 active:scale-95 transition-transform flex flex-row items-center justify-center gap-2 text-xs uppercase tracking-widest"
+        >
+          <FileDown size={18}/> Cetak Laporan PDF
+        </button>
+      </div>
+
     </div>
   );
 }
@@ -1078,7 +1128,6 @@ function NotaModal({ order, formatRp, onClose, showAlert }) {
   const handleShareProcess = async () => {
     showAlert('Sedang memproses nota...');
 
-    // Teks WA sekarang otomatis mengikuti nama aplikasi yang diatur di atas
     const textWa = `*${APP_NAME_LINE1.toUpperCase()} ${APP_NAME_LINE2.toUpperCase()}*\n${APP_SUBTITLE}\n\nID: ${order.id}\nTanggal: ${order.date}\n------------------------\nPelanggan: ${order.customerName}\nWA: ${order.customerPhone || '-'}\nPlat: ${order.plate}\nAlamat: ${order.address || '-'}\n------------------------\nLayanan:\n${(order.items || []).map(it => `- ${it.name}: ${formatRp(it.calculatedPrice)}`).join('\n')}\n------------------------\n*TOTAL: ${formatRp(order.total)}*\n\nTerima kasih atas kepercayaannya!`;
     setTextWaData(textWa);
 
@@ -1120,7 +1169,6 @@ function NotaModal({ order, formatRp, onClose, showAlert }) {
     <div className="fixed inset-0 bg-slate-900/90 z-[100] flex items-center justify-center p-5 backdrop-blur-md animate-fadeIn">
       <div className="bg-white w-full max-w-sm rounded-[3rem] overflow-hidden flex flex-col shadow-2xl">
         
-        {/* JIKA MODE SCREENSHOT AKTIF */}
         {capturedImage ? (
           <div className="flex flex-col h-full max-h-[85vh]">
             <div className="p-4 bg-slate-800 border-b border-slate-700 text-center shrink-0 shadow-md z-10 relative">
@@ -1146,7 +1194,6 @@ function NotaModal({ order, formatRp, onClose, showAlert }) {
             </div>
           </div>
         ) : (
-          /* JIKA NOTA BIASA (BELUM KLIK SHARE) */
           <>
             <div id="nota-capture-area" className="bg-white">
               <div className="bg-slate-50 p-8 text-center relative border-b border-dashed border-slate-200">
@@ -1166,7 +1213,6 @@ function NotaModal({ order, formatRp, onClose, showAlert }) {
                   <p className="font-black text-2xl text-slate-800 tracking-tighter">{order.plate || '-'}</p>
                   <p className="text-slate-400 font-black uppercase tracking-widest text-[10px] mt-1">{order.customerName || '-'} | {order.customerPhone || '-'}</p>
                   
-                  {/* ALAMAT DI NOTA BISA DIKLIK UNTUK BUKA GOOGLE MAPS */}
                   <p 
                     onClick={() => { 
                       if(order.address && order.address !== '-') {
