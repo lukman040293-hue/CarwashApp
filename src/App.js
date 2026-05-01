@@ -101,7 +101,7 @@ export default function App() {
   useEffect(() => {
     const metaThemeColor = document.querySelector("meta[name=theme-color]");
     if (metaThemeColor) {
-      metaThemeColor.setAttribute("content", "#000000"); 
+      metaThemeColor.setAttribute("content", "#ffffff"); 
     }
   }, []);
 
@@ -160,26 +160,26 @@ export default function App() {
       {/* HEADER SECTION */}
       {activeTab === 'kasir' && (
         <div className="shrink-0 z-10 w-full">
-          <div className="bg-black rounded-b-[1.5rem] px-5 pt-5 pb-4 flex flex-col justify-center shadow-[0_4px_15px_rgba(0,0,0,0.08)] border-b border-slate-800 text-white relative overflow-hidden">
-            <div className="absolute -right-8 -top-8 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
-            <div className="absolute -left-10 -bottom-10 w-24 h-24 bg-slate-800/50 rounded-full blur-xl"></div>
+          <div className="bg-white rounded-b-[1.5rem] px-5 pt-5 pb-4 flex flex-col justify-center shadow-[0_4px_15px_rgba(0,0,0,0.05)] border-b border-slate-200 text-slate-800 relative overflow-hidden">
+            <div className="absolute -right-8 -top-8 w-32 h-32 bg-indigo-50 rounded-full blur-2xl"></div>
+            <div className="absolute -left-10 -bottom-10 w-24 h-24 bg-slate-100 rounded-full blur-xl"></div>
             <div className="flex justify-between items-center relative z-10">
               <div className="flex items-center gap-3.5">
                 <img 
                   src={APP_LOGO} 
                   alt="Logo Aplikasi" 
-                  className="w-14 h-14 sm:w-16 sm:h-16 object-cover drop-shadow-xl shrink-0 rounded-xl"
+                  className="w-14 h-14 sm:w-16 sm:h-16 object-cover drop-shadow-sm shrink-0 rounded-xl"
                 />
                 <div className="flex flex-col justify-center">
-                  <h1 className="text-sm sm:text-base font-black tracking-[0.1em] text-white uppercase drop-shadow-md leading-tight">
+                  <h1 className="text-sm sm:text-base font-black tracking-[0.1em] text-slate-800 uppercase leading-tight">
                     {APP_NAME_LINE1}
                     {APP_NAME_LINE2 && <><br/>{APP_NAME_LINE2}</>}
                   </h1>
-                  <p className="text-[10px] sm:text-xs font-black tracking-[0.25em] text-indigo-300 mt-1 uppercase">{APP_SUBTITLE}</p>
+                  <p className="text-[10px] sm:text-xs font-black tracking-[0.25em] text-indigo-500 mt-1 uppercase">{APP_SUBTITLE}</p>
                 </div>
               </div>
-              <div className="bg-white/10 p-2 rounded-xl border border-white/20 backdrop-blur-md shadow-sm shrink-0 flex items-center gap-1.5">
-                <User size={18} className="text-white"/>
+              <div className="bg-slate-50 p-2 rounded-xl border border-slate-200 shadow-sm shrink-0 flex items-center gap-1.5">
+                <User size={18} className="text-slate-600"/>
               </div>
             </div>
           </div>
@@ -866,7 +866,7 @@ function RiwayatView({ orders, setOrders, formatRp, setActiveNota, showConfirm, 
                     <h4 className="font-black text-slate-800 text-xl sm:text-2xl tracking-tight mb-1">{order.plate || '-'}</h4>
                     <p className="text-xs font-medium text-slate-500">{order.customerName || '-'} • {order.customerPhone || '-'}</p>
                   </div>
-                  <span className={`text-[10px] px-3 py-1.5 rounded-xl font-bold uppercase tracking-wider shrink-0 ${order.status === 'Lunas' ? 'bg-green-50 text-green-600' : 'bg-orange-50 text-orange-600'}`}>
+                  <span className={`text-[10px] px-3 py-1.5 rounded-xl font-bold uppercase tracking-wider shrink-0 ${order.status === 'Lunas' ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-600'}`}>
                     {order.status}
                   </span>
                 </div>
@@ -1051,13 +1051,13 @@ function LaporanView({ orders, formatRp, showAlert }) {
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        <div className="bg-orange-50 p-6 rounded-[2rem] border border-orange-100 flex flex-col justify-center">
+        <div className="bg-indigo-50 p-6 rounded-[2rem] border border-indigo-100 flex flex-col justify-center">
           <div className="flex items-center gap-2 mb-3">
-            <div className="p-1.5 bg-orange-200 rounded-full text-orange-600"><Clock size={16} /></div>
-            <p className="text-[10px] font-black text-orange-600 uppercase tracking-widest">Antrian</p>
+            <div className="p-1.5 bg-indigo-200 rounded-full text-indigo-600"><Clock size={16} /></div>
+            <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">Antrian</p>
           </div>
-          <p className="text-4xl font-black text-orange-600">{monthPending.length}</p>
-          <p className="text-[10px] font-bold text-orange-400 mt-1 uppercase tracking-wider">Unit Diproses</p>
+          <p className="text-4xl font-black text-indigo-600">{monthPending.length}</p>
+          <p className="text-[10px] font-bold text-indigo-400 mt-1 uppercase tracking-wider">Unit Diproses</p>
         </div>
         
         <div className="bg-green-50 p-6 rounded-[2rem] border border-green-100 flex flex-col justify-center">
