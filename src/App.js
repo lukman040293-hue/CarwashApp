@@ -27,19 +27,35 @@ import {
   Map,
   Navigation,
   Flame,
-  TrendingUp
+  TrendingUp,
+  Loader2
 } from 'lucide-react';
 
+// --- FIREBASE CLOUD STORAGE SETUP ---
+import { initializeApp } from 'firebase/app';
+import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
+import { getFirestore, collection, onSnapshot, doc, setDoc } from 'firebase/firestore';
+
+let app, auth, db, appId;
+try {
+  const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+  app = initializeApp(firebaseConfig);
+  auth = getAuth(app);
+  db = getFirestore(app);
+  appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+} catch (error) {
+  console.error("Firebase init error", error);
+}
+
 // --- PENGATURAN HEADER & LOGO ---
-// Bos bisa mengganti logo, nama usaha, dan sub-teksnya di sini:
 const APP_LOGO = 'https://images.unsplash.com/photo-1777407265534-248433dc692c?q=80&w=880&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'; 
 const APP_NAME_LINE1 = 'Carwash & Detailing';       
 const APP_NAME_LINE2 = '';     
-const APP_SUBTITLE = 'Home Service';      // Teks kecil di bawah judul
+const APP_SUBTITLE = 'Home Service';      
 
 // --- DATA MASTER LAYANAN (Diperbarui dengan Foto Asli) ---
 const SERVICES = [
-  { id: 'w1', name: 'Basic Wash', category: 'Carwash', price: 150000, image: 'https://images.unsplash.com/photo-1777400924439-3e5ab46a9373?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', desc: 'Prewash, Handwash, Vacum Interior, Dressing Ban, Lap Mircofiber, Finishing' },
+  { id: 'w1', name: 'Basic Wash', category: 'Carwash', price: 150000, image: 'https://images.unsplash.com/photo-1777400924439-3e5ab46a9373?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', bestSeller: true, desc: 'Prewash, Handwash, Vacum Interior, Dressing Ban, Lap Mircofiber, Finishing' },
   { id: 'w2', name: 'Premium Wash', category: 'Carwash', price: { Kecil: 300000, Besar: 315000 }, image: 'https://images.unsplash.com/photo-1777398801194-b43d80625efd?q=80&w=880&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', recommended: true, desc: 'Include Detail Wash, Jamur Body + Noda Aspal (RINGAN), Window Cleaning, Emblem Logo, Sela Pintu Cleaning, Interior Detailing Level 1' },
   { id: 'w3', name: 'Detail Wash', category: 'Carwash', price: 200000, image: 'https://images.unsplash.com/photo-1777400924425-29aa6b51e01b?q=80&w=1476&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', desc: 'Basic Wash, Dressing Interior, Door Jamb / Ketiak pintu' },
   { id: 'd1', name: 'Wash(Cuci) Engine', category: 'Engine', price: { Kecil: 125000, Besar: 145000 }, image: 'https://images.unsplash.com/photo-1777401359919-047b5f0cb0a9?q=80&w=1632&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', desc: 'Pembersihan debu ruang mesin.' },
@@ -71,31 +87,85 @@ export default function App() {
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
   const [editingOrder, setEditingOrder] = useState(null);
   
-  const [customServices, setCustomServices] = useState(() => {
-    try {
-      const saved = localStorage.getItem('l_carwash_custom_services');
-      return saved ? JSON.parse(saved) : [];
-    } catch (e) { return []; }
-  }); 
-  
-  const [orders, setOrders] = useState(() => {
-    try {
-      const saved = localStorage.getItem('l_carwash_orders');
-      return saved ? JSON.parse(saved) : [];
-    } catch (e) { return []; }
-  });
+  // CLOUD STATE
+  const [user, setUser] = useState(null);
+  const [isDbReady, setIsDbReady] = useState(false);
+  const [orders, setOrders] = useState([]);
+  const [customServices, setCustomServices] = useState([]);
 
+  // 1. Inisialisasi Otentikasi Cloud
   useEffect(() => {
-    try {
-      localStorage.setItem('l_carwash_orders', JSON.stringify(orders));
-    } catch (e) {}
-  }, [orders]);
+    if (!auth) return;
+    const initAuth = async () => {
+      try {
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          await signInWithCustomToken(auth, __initial_auth_token);
+        } else {
+          await signInAnonymously(auth);
+        }
+      } catch (error) {
+        console.error("Auth error", error);
+      }
+    };
+    initAuth();
+    const unsubscribe = onAuthStateChanged(auth, setUser);
+    return () => unsubscribe();
+  }, []);
 
+  // 2. Sinkronisasi Data Real-time (Cloud Listener)
   useEffect(() => {
+    if (!user || !db) return;
+
+    // Mendengarkan perubahan data pesanan secara real-time
+    const ordersRef = collection(db, 'artifacts', appId, 'public', 'data', 'orders');
+    const unsubOrders = onSnapshot(ordersRef, (snapshot) => {
+      const data = [];
+      snapshot.forEach(doc => data.push({ ...doc.data(), id: doc.id }));
+      // Urutkan pesanan dari yang paling baru
+      data.sort((a, b) => b.id.localeCompare(a.id)); 
+      setOrders(data);
+      setIsDbReady(true);
+    }, (error) => {
+      console.error("Gagal sinkronisasi orders", error);
+    });
+
+    // Mendengarkan perubahan layanan kustom secara real-time
+    const csRef = collection(db, 'artifacts', appId, 'public', 'data', 'customServices');
+    const unsubCs = onSnapshot(csRef, (snapshot) => {
+      const data = [];
+      snapshot.forEach(doc => data.push({ ...doc.data(), id: doc.id }));
+      setCustomServices(data);
+    }, (error) => {
+      console.error("Gagal sinkronisasi custom services", error);
+    });
+
+    return () => {
+      unsubOrders();
+      unsubCs();
+    };
+  }, [user]);
+
+  // Fungsi Mutasi ke Cloud Storage
+  const saveOrderToDb = async (orderData) => {
+    if (!db || !user) return;
     try {
-      localStorage.setItem('l_carwash_custom_services', JSON.stringify(customServices));
-    } catch (e) {}
-  }, [customServices]);
+      const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'orders', orderData.id);
+      await setDoc(docRef, orderData);
+    } catch (error) {
+      console.error("Gagal menyimpan order", error);
+      showAlert("Gagal menyimpan ke Cloud. Periksa koneksi internet.");
+    }
+  };
+
+  const saveCustomServiceToDb = async (serviceData) => {
+    if (!db || !user) return;
+    try {
+      const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'customServices', serviceData.id.toString());
+      await setDoc(docRef, serviceData);
+    } catch (error) {
+      console.error("Gagal menyimpan layanan", error);
+    }
+  };
 
   useEffect(() => {
     const metaThemeColor = document.querySelector("meta[name=theme-color]");
@@ -144,6 +214,16 @@ export default function App() {
   const showAlert = (message) => setDialog({ type: 'alert', message });
   const showConfirm = (message, onConfirm) => setDialog({ type: 'confirm', message, onConfirm });
 
+  // Tampilan Loading Awal saat mengambil data dari Cloud
+  if (!isDbReady) {
+    return (
+      <div className="min-h-[100dvh] w-full flex flex-col items-center justify-center bg-slate-50 text-indigo-500 font-sans">
+        <Loader2 className="animate-spin mb-4" size={40} />
+        <p className="font-bold tracking-widest text-xs uppercase animate-pulse">Menghubungkan ke Cloud...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-slate-50 text-slate-800 w-full min-h-[100dvh] relative overflow-x-hidden flex flex-col font-sans">
       <style dangerouslySetInnerHTML={{__html: `
@@ -174,11 +254,12 @@ export default function App() {
                     {APP_NAME_LINE1}
                     {APP_NAME_LINE2 && <><br/>{APP_NAME_LINE2}</>}
                   </h1>
-                  <p className="text-[10px] sm:text-xs font-black tracking-[0.25em] text-yellow-200 mt-1 uppercase">{APP_SUBTITLE}</p>
+                  <p className="text-[10px] sm:text-xs font-black tracking-[0.25em] text-indigo-300 mt-1 uppercase">{APP_SUBTITLE}</p>
                 </div>
               </div>
-              <div className="bg-white/10 p-2 rounded-xl border border-white/20 backdrop-blur-md shadow-sm shrink-0">
-                <User size={18} className="text-white"/>
+              <div className="bg-white/10 p-2 rounded-xl border border-white/20 backdrop-blur-md shadow-sm shrink-0 flex items-center gap-1.5">
+                <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></div>
+                <span className="text-[8px] font-bold text-white uppercase tracking-widest hidden sm:block">Cloud Sync</span>
               </div>
             </div>
           </div>
@@ -187,10 +268,10 @@ export default function App() {
 
       {/* CONTENT AREA */}
       <div className={`flex-1 overflow-y-auto hide-scrollbar ${activeTab === 'peta' ? 'px-0 pt-0 pb-32' : 'px-4 sm:px-5'} ${activeTab === 'kasir' ? 'pb-[260px]' : (activeTab !== 'peta' ? 'pb-32' : '')} ${activeTab !== 'kasir' && activeTab !== 'peta' ? 'pt-8' : 'pt-5'} w-full relative`}>
-        {activeTab === 'kasir' && <KasirView services={SERVICES} customServices={customServices} setCustomServices={setCustomServices} setOrders={setOrders} formatRp={formatRp} setActiveTab={setActiveTab} setActiveNota={setActiveNota} showAlert={showAlert} isKeyboardOpen={isKeyboardOpen} editingOrder={editingOrder} setEditingOrder={setEditingOrder} />}
+        {activeTab === 'kasir' && <KasirView services={SERVICES} customServices={customServices} saveCustomServiceToDb={saveCustomServiceToDb} saveOrderToDb={saveOrderToDb} formatRp={formatRp} setActiveTab={setActiveTab} setActiveNota={setActiveNota} showAlert={showAlert} isKeyboardOpen={isKeyboardOpen} editingOrder={editingOrder} setEditingOrder={setEditingOrder} />}
         {activeTab === 'peta' && <PetaView orders={orders} formatRp={formatRp} setActiveNota={setActiveNota} />}
         {activeTab === 'kalender' && <KalenderView orders={orders} formatRp={formatRp} setActiveNota={setActiveNota} />}
-        {activeTab === 'riwayat' && <RiwayatView orders={orders} setOrders={setOrders} formatRp={formatRp} setActiveNota={setActiveNota} showAlert={showAlert} showConfirm={showConfirm} setEditingOrder={setEditingOrder} setActiveTab={setActiveTab} />}
+        {activeTab === 'riwayat' && <RiwayatView orders={orders} saveOrderToDb={saveOrderToDb} formatRp={formatRp} setActiveNota={setActiveNota} showAlert={showAlert} showConfirm={showConfirm} setEditingOrder={setEditingOrder} setActiveTab={setActiveTab} />}
         {activeTab === 'laporan' && <LaporanView orders={orders} formatRp={formatRp} showAlert={showAlert} />}
       </div>
 
@@ -201,13 +282,13 @@ export default function App() {
           <div className="mx-auto max-w-lg bg-white pt-4 px-4 sm:px-5 pb-[4.5rem] -mb-[3.5rem] rounded-t-[2rem] rounded-b-[2rem] shadow-[0_-4px_15px_rgba(0,0,0,0.05)] border border-slate-200 flex justify-between items-center pointer-events-auto relative">
             <div className="flex-1 min-w-0 pr-4">
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Total Tagihan</p>
-              <p className="text-2xl font-black text-orange-600 leading-none tracking-tight truncate">
+              <p className="text-2xl font-black text-indigo-600 leading-none tracking-tight truncate">
                 <KasirTotalCalculator formatRp={formatRp} />
               </p>
             </div>
             <button 
               onClick={() => document.getElementById('btn-simpan-kasir')?.click()} 
-              className="shrink-0 bg-[#f97316] hover:bg-orange-600 text-white font-black px-6 sm:px-8 py-4 rounded-2xl shadow-md shadow-orange-200 active:scale-95 transition-transform flex items-center justify-center gap-2"
+              className="shrink-0 bg-indigo-500 hover:bg-indigo-600 text-white font-black px-6 sm:px-8 py-4 rounded-2xl shadow-md shadow-indigo-200 active:scale-95 transition-transform flex items-center justify-center gap-2"
             >
               {editingOrder ? 'Perbarui' : 'Simpan'} <CheckCircle size={20}/>
             </button>
@@ -215,7 +296,7 @@ export default function App() {
         )}
 
         {/* NAVIGASI BAWAH */}
-        <div className="mx-auto max-w-lg bg-[#f97316] flex justify-between items-center px-1.5 py-2 rounded-[2rem] shadow-md shadow-orange-900/20 pointer-events-auto relative z-[61]">
+        <div className="mx-auto max-w-lg bg-indigo-500 flex justify-between items-center px-1.5 py-2 rounded-[2rem] shadow-md shadow-indigo-900/20 pointer-events-auto relative z-[61]">
           <NavItem icon={<ClipboardList />} label="Kasir" isActive={activeTab === 'kasir'} onClick={() => setActiveTab('kasir')} />
           <NavItem icon={<Map />} label="Peta" isActive={activeTab === 'peta'} onClick={() => setActiveTab('peta')} />
           <NavItem icon={<CalendarDays />} label="Jadwal" isActive={activeTab === 'kalender'} onClick={() => setActiveTab('kalender')} />
@@ -234,7 +315,7 @@ export default function App() {
             <p className="text-slate-800 font-bold mb-8 text-base">{dialog.message}</p>
             <div className="flex gap-3">
               {dialog.type === 'confirm' && <button onClick={() => setDialog(null)} className="flex-1 py-4 rounded-2xl bg-slate-100 text-slate-600 font-bold text-sm active:bg-slate-200 transition-colors">Batal</button>}
-              <button onClick={() => { if (dialog.onConfirm) dialog.onConfirm(); setDialog(null); }} className="flex-1 py-4 rounded-2xl bg-[#f97316] text-white font-bold text-sm shadow-xl shadow-orange-200 active:scale-95 transition-transform">OK</button>
+              <button onClick={() => { if (dialog.onConfirm) dialog.onConfirm(); setDialog(null); }} className="flex-1 py-4 rounded-2xl bg-indigo-500 text-white font-bold text-sm shadow-xl shadow-indigo-200 active:scale-95 transition-transform">OK</button>
             </div>
           </div>
         </div>
@@ -266,7 +347,7 @@ function KasirTotalCalculator({ formatRp }) {
 
 function NavItem({ icon, label, isActive, onClick }) {
   return (
-    <button onClick={onClick} className={`flex items-center justify-center transition-all duration-300 ${isActive ? 'bg-white text-[#f97316] px-3.5 sm:px-5 py-3 rounded-2xl font-black shadow-lg scale-105' : 'text-white/70 p-2.5 hover:text-white active:scale-95'}`}>
+    <button onClick={onClick} className={`flex items-center justify-center transition-all duration-300 ${isActive ? 'bg-white text-indigo-500 px-3.5 sm:px-5 py-3 rounded-2xl font-black shadow-lg scale-105' : 'text-white/70 p-2.5 hover:text-white active:scale-95'}`}>
       {React.cloneElement(icon, { size: 20, strokeWidth: isActive ? 2.5 : 2 })}
       {isActive && <span className="ml-1.5 text-[10px] sm:text-xs tracking-tight">{label}</span>}
     </button>
@@ -291,14 +372,14 @@ function PetaView({ orders, formatRp, setActiveNota }) {
       <div className="w-full h-[45vh] bg-slate-200 shrink-0 relative z-10 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.1)] rounded-b-[2rem] overflow-hidden">
         {isUrl ? (
           <div className="w-full h-full flex flex-col items-center justify-center bg-slate-100 p-8 text-center border-b border-slate-200">
-            <div className="w-16 h-16 bg-orange-100 text-orange-500 rounded-full flex items-center justify-center mb-4 shadow-inner">
+            <div className="w-16 h-16 bg-indigo-100 text-indigo-500 rounded-full flex items-center justify-center mb-4 shadow-inner">
               <Map size={32} />
             </div>
             <p className="text-base font-black text-slate-800 mb-1">Tautan Lokasi Terdeteksi</p>
             <p className="text-[10px] text-slate-500 mb-6 leading-relaxed max-w-[200px]">Pratinjau peta tidak dapat memuat Sharelok. Silakan buka langsung di aplikasi.</p>
             <button 
               onClick={() => window.open(mapUrl, '_blank')}
-              className="bg-[#f97316] text-white font-black text-xs uppercase tracking-widest px-6 py-4 rounded-xl shadow-xl shadow-orange-200 active:scale-95 transition-transform"
+              className="bg-indigo-500 text-white font-black text-xs uppercase tracking-widest px-6 py-4 rounded-xl shadow-xl shadow-indigo-200 active:scale-95 transition-transform"
             >
               Buka Google Maps
             </button>
@@ -318,7 +399,7 @@ function PetaView({ orders, formatRp, setActiveNota }) {
         {!isUrl && (
           <button 
             onClick={() => window.open(mapUrl, '_blank')}
-            className="absolute bottom-5 right-5 bg-white text-[#f97316] font-black text-[10px] uppercase tracking-widest px-4 py-3 rounded-xl shadow-lg border border-slate-100 flex items-center gap-1.5 active:scale-95 transition-transform"
+            className="absolute bottom-5 right-5 bg-white text-indigo-500 font-black text-[10px] uppercase tracking-widest px-4 py-3 rounded-xl shadow-lg border border-slate-100 flex items-center gap-1.5 active:scale-95 transition-transform"
           >
             <Navigation size={14} /> Navigasi Rute
           </button>
@@ -328,7 +409,7 @@ function PetaView({ orders, formatRp, setActiveNota }) {
       <div className="flex-1 overflow-y-auto px-5 pt-8 pb-32 space-y-4">
         <div className="flex justify-between items-center mb-2">
           <h3 className="font-black text-sm text-slate-800 flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-[#f97316]"></div>
+            <div className="w-2 h-2 rounded-full bg-indigo-500"></div>
             Lokasi Panggilan (Belum Lunas)
           </h3>
           <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-lg">{pendingOrders.length} Titik</span>
@@ -349,7 +430,7 @@ function PetaView({ orders, formatRp, setActiveNota }) {
                 onClick={() => {
                   if (o.address && o.address !== '-') setSelectedAddress(o.address);
                 }}
-                className={`p-5 rounded-[1.5rem] border-2 transition-all flex flex-col relative cursor-pointer active:scale-[0.98] ${isActive ? 'border-orange-500 bg-orange-50 shadow-md' : 'bg-white border-slate-100 shadow-sm hover:border-slate-200'}`}
+                className={`p-5 rounded-[1.5rem] border-2 transition-all flex flex-col relative cursor-pointer active:scale-[0.98] ${isActive ? 'border-indigo-500 bg-indigo-50 shadow-md' : 'bg-white border-slate-100 shadow-sm hover:border-slate-200'}`}
               >
                 <div className="flex justify-between items-start mb-2">
                   <div className="pr-2">
@@ -357,13 +438,13 @@ function PetaView({ orders, formatRp, setActiveNota }) {
                     <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest mt-0.5">{o.plate || '-'}</p>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="text-[10px] font-black text-orange-600 mb-0.5">{(o.date || '').substring(0, 5)}</p>
+                    <p className="text-[10px] font-black text-indigo-600 mb-0.5">{(o.date || '').substring(0, 5)}</p>
                     <p className="text-sm font-black text-slate-700">{o.time || '-'}</p>
                   </div>
                 </div>
 
                 <p className="text-[10px] font-medium text-slate-500 flex items-start gap-1 leading-snug mt-1">
-                  <MapPin size={12} className={`shrink-0 mt-0.5 ${isActive ? 'text-orange-500' : 'text-slate-400'}`}/> 
+                  <MapPin size={12} className={`shrink-0 mt-0.5 ${isActive ? 'text-indigo-500' : 'text-slate-400'}`}/> 
                   <span className="line-clamp-2">
                     {itemHasUrl ? '🔗 Tautan Sharelok Terlampir' : (o.address || '-')}
                   </span>
@@ -378,7 +459,7 @@ function PetaView({ orders, formatRp, setActiveNota }) {
 }
 
 // --- VIEW: KASIR ---
-function KasirView({ services, customServices, setCustomServices, setOrders, formatRp, setActiveTab, setActiveNota, showAlert, isKeyboardOpen, editingOrder, setEditingOrder }) {
+function KasirView({ services, customServices, saveCustomServiceToDb, saveOrderToDb, formatRp, setActiveTab, setActiveNota, showAlert, isKeyboardOpen, editingOrder, setEditingOrder }) {
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [address, setAddress] = useState('');
@@ -476,11 +557,11 @@ function KasirView({ services, customServices, setCustomServices, setOrders, for
       status: editingOrder ? editingOrder.status : 'Belum Lunas'
     };
 
+    // Panggil fungsi Cloud Storage
+    saveOrderToDb(newOrder);
+    
     if (editingOrder) {
-      setOrders(prev => prev.map(o => o.id === editingOrder.id ? newOrder : o));
       setEditingOrder(null); 
-    } else {
-      setOrders(prev => [newOrder, ...prev]);
     }
     
     setActiveTab('riwayat');
@@ -491,12 +572,12 @@ function KasirView({ services, customServices, setCustomServices, setOrders, for
     <div className="animate-fadeIn space-y-6 relative">
       
       {editingOrder && (
-        <div className="bg-blue-100 text-blue-800 p-5 rounded-[2rem] flex justify-between items-center border border-blue-200 shadow-sm mb-4">
+        <div className="bg-indigo-100 text-indigo-800 p-5 rounded-[2rem] flex justify-between items-center border border-indigo-200 shadow-sm mb-4">
           <div>
-            <p className="text-[10px] font-black uppercase tracking-widest text-blue-500 mb-0.5">Mode Edit Transaksi</p>
+            <p className="text-[10px] font-black uppercase tracking-widest text-indigo-500 mb-0.5">Mode Edit Transaksi</p>
             <p className="font-bold text-sm leading-none">{editingOrder.id}</p>
           </div>
-          <button onClick={() => setEditingOrder(null)} className="bg-white text-blue-600 px-4 py-2.5 rounded-xl text-xs font-black shadow-sm active:scale-95 transition-transform">
+          <button onClick={() => setEditingOrder(null)} className="bg-white text-indigo-600 px-4 py-2.5 rounded-xl text-xs font-black shadow-sm active:scale-95 transition-transform">
             Batal Edit
           </button>
         </div>
@@ -504,26 +585,26 @@ function KasirView({ services, customServices, setCustomServices, setOrders, for
 
       <div>
         <h2 className="font-black text-lg text-slate-800 flex items-center gap-2.5 mb-4 pl-1">
-          <div className="p-2 bg-orange-100 rounded-xl text-orange-600"><Car size={20}/></div>
+          <div className="p-2 bg-indigo-100 rounded-xl text-indigo-600"><Car size={20}/></div>
           Pelanggan & Kendaraan
         </h2>
         
         <div className="bg-white p-5 sm:p-6 rounded-[2rem] shadow-sm border border-slate-100 space-y-5">
           <div className="space-y-2">
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5 pl-1"><Calendar size={12}/> Tanggal</label>
-            <input type="date" value={orderDate} onChange={e => setOrderDate(e.target.value)} className="w-full bg-slate-50 border border-slate-100 rounded-[1.25rem] p-4 text-base font-bold outline-none focus:ring-2 focus:ring-orange-500 focus:bg-white transition-all text-slate-700"/>
+            <input type="date" value={orderDate} onChange={e => setOrderDate(e.target.value)} className="w-full bg-slate-50 border border-slate-100 rounded-[1.25rem] p-4 text-base font-bold outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all text-slate-700"/>
           </div>
           <div className="space-y-2">
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5 pl-1"><Clock size={12}/> Jam</label>
-            <input type="time" value={orderTime} onChange={e => setOrderTime(e.target.value)} className="w-full bg-slate-50 border border-slate-100 rounded-[1.25rem] p-4 text-base font-bold outline-none focus:ring-2 focus:ring-orange-500 focus:bg-white transition-all text-slate-700"/>
+            <input type="time" value={orderTime} onChange={e => setOrderTime(e.target.value)} className="w-full bg-slate-50 border border-slate-100 rounded-[1.25rem] p-4 text-base font-bold outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all text-slate-700"/>
           </div>
           <div className="space-y-2">
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1 flex items-center gap-1.5"><User size={12}/> Nama Pemilik</label>
-            <input type="text" placeholder="Masukkan nama pelanggan..." value={customerName} onChange={e => setCustomerName(e.target.value)} className="w-full bg-slate-50 border border-slate-100 rounded-[1.25rem] p-4 text-base font-bold outline-none focus:ring-2 focus:ring-orange-500 focus:bg-white transition-all placeholder:text-slate-300 placeholder:font-medium"/>
+            <input type="text" placeholder="Masukkan nama pelanggan..." value={customerName} onChange={e => setCustomerName(e.target.value)} className="w-full bg-slate-50 border border-slate-100 rounded-[1.25rem] p-4 text-base font-bold outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all placeholder:text-slate-300 placeholder:font-medium"/>
           </div>
           <div className="space-y-2">
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1 flex items-center gap-1.5"><Phone size={12}/> No. WhatsApp</label>
-            <input type="tel" placeholder="Contoh: 08123456789" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} className="w-full bg-slate-50 border border-slate-100 rounded-[1.25rem] p-4 text-base font-bold outline-none focus:ring-2 focus:ring-orange-500 focus:bg-white transition-all placeholder:text-slate-300 placeholder:font-medium"/>
+            <input type="tel" placeholder="Contoh: 08123456789" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} className="w-full bg-slate-50 border border-slate-100 rounded-[1.25rem] p-4 text-base font-bold outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all placeholder:text-slate-300 placeholder:font-medium"/>
           </div>
           
           <div className="space-y-2">
@@ -539,13 +620,13 @@ function KasirView({ services, customServices, setCustomServices, setOrders, for
                       setShowMap(!showMap);
                     }
                   }} 
-                  className="text-[10px] font-black text-[#f97316] bg-orange-50 px-2.5 py-1 rounded flex items-center gap-1 active:scale-95"
+                  className="text-[10px] font-black text-indigo-500 bg-indigo-50 px-2.5 py-1 rounded flex items-center gap-1 active:scale-95"
                 >
                   {hasUrlInAddress ? <><Navigation size={10} /> Buka Link Map</> : <><Map size={10} /> {showMap ? 'Tutup Peta' : 'Cek Peta'}</>}
                 </button>
               )}
             </div>
-            <textarea placeholder="Ketik alamat atau paste Link Sharelok WA di sini..." value={address} onChange={e => setAddress(e.target.value)} rows="3" className="w-full bg-slate-50 border border-slate-100 rounded-[1.25rem] p-4 text-base font-bold outline-none focus:ring-2 focus:ring-orange-500 focus:bg-white transition-all placeholder:text-slate-300 placeholder:font-medium resize-none"></textarea>
+            <textarea placeholder="Ketik alamat atau paste Link Sharelok WA di sini..." value={address} onChange={e => setAddress(e.target.value)} rows="3" className="w-full bg-slate-50 border border-slate-100 rounded-[1.25rem] p-4 text-base font-bold outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all placeholder:text-slate-300 placeholder:font-medium resize-none"></textarea>
             
             {showMap && address && !hasUrlInAddress && (
               <div className="w-full h-[200px] rounded-[1.25rem] overflow-hidden border border-slate-200 mt-2 bg-slate-100 relative">
@@ -564,11 +645,11 @@ function KasirView({ services, customServices, setCustomServices, setOrders, for
 
           <div className="space-y-2">
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Tipe Mobil</label>
-            <input type="text" placeholder="Contoh: Pajero Sport, Avanza" value={carType} onChange={e => setCarType(e.target.value)} className="w-full bg-slate-50 border border-slate-100 rounded-[1.25rem] p-4 text-base font-bold outline-none focus:ring-2 focus:ring-orange-500 focus:bg-white transition-all placeholder:text-slate-300 placeholder:font-medium"/>
+            <input type="text" placeholder="Contoh: Pajero Sport, Avanza" value={carType} onChange={e => setCarType(e.target.value)} className="w-full bg-slate-50 border border-slate-100 rounded-[1.25rem] p-4 text-base font-bold outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all placeholder:text-slate-300 placeholder:font-medium"/>
           </div>
           <div className="space-y-2">
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Plat Nomor</label>
-            <input type="text" placeholder="B 1234 XYZ" value={plate} onChange={e => setPlate(e.target.value)} className="w-full bg-slate-50 border border-slate-100 rounded-[1.25rem] p-4 text-base font-black uppercase outline-none focus:ring-2 focus:ring-orange-500 focus:bg-white transition-all placeholder:text-slate-300 placeholder:font-medium"/>
+            <input type="text" placeholder="B 1234 XYZ" value={plate} onChange={e => setPlate(e.target.value)} className="w-full bg-slate-50 border border-slate-100 rounded-[1.25rem] p-4 text-base font-black uppercase outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all placeholder:text-slate-300 placeholder:font-medium"/>
           </div>
         </div>
       </div>
@@ -587,14 +668,14 @@ function KasirView({ services, customServices, setCustomServices, setOrders, for
                   <div 
                     key={item.id} 
                     onClick={() => toggleItem(item)} 
-                    className={`rounded-[1.5rem] border-2 transition-all flex flex-col relative cursor-pointer active:scale-[0.98] overflow-hidden ${isSelected ? 'border-orange-500 bg-orange-50 shadow-md' : 'bg-white border-slate-100 shadow-sm hover:border-slate-200'}`}
+                    className={`rounded-[1.5rem] border-2 transition-all flex flex-col relative cursor-pointer active:scale-[0.98] overflow-hidden ${isSelected ? 'border-indigo-500 bg-indigo-50 shadow-md' : 'bg-white border-slate-100 shadow-sm hover:border-slate-200'}`}
                   >
                     
-                    {isSelected && <div className="absolute top-4 right-4 bg-[#f97316] text-white rounded-full p-1.5 shadow-sm z-20"><CheckCircle size={22}/></div>}
+                    {isSelected && <div className="absolute top-4 right-4 bg-indigo-500 text-white rounded-full p-1.5 shadow-sm z-20"><CheckCircle size={22}/></div>}
                     
                     <div className="flex flex-row items-stretch min-h-[140px]">
                       
-                      <div className="w-[110px] sm:w-[150px] shrink-0 relative bg-slate-100 border-r border-slate-100">
+                      <div className="w-[130px] sm:w-[150px] shrink-0 relative bg-slate-100 border-r border-slate-100">
                         <img src={itemImage} alt={item.name} className="absolute inset-0 w-full h-full object-cover" />
                       </div>
 
@@ -634,22 +715,22 @@ function KasirView({ services, customServices, setCustomServices, setOrders, for
                           <div className="text-xs font-bold text-slate-600 mt-auto flex flex-col gap-1">
                             <div className="flex items-center justify-between bg-white border border-slate-100 px-2.5 py-1.5 rounded-lg shadow-sm">
                                <span>Kecil:</span> 
-                               <span className="text-[#f97316] font-black text-sm">{formatRp(item.price.Kecil)}</span>
+                               <span className="text-indigo-500 font-black text-sm">{formatRp(item.price.Kecil)}</span>
                             </div>
                             <div className="flex items-center justify-between bg-white border border-slate-100 px-2.5 py-1.5 rounded-lg shadow-sm">
                                <span>Besar:</span> 
-                               <span className="text-[#f97316] font-black text-sm">{formatRp(item.price.Besar)}</span>
+                               <span className="text-indigo-500 font-black text-sm">{formatRp(item.price.Besar)}</span>
                             </div>
                           </div>
                         ) : (
-                          <p className="text-base font-black text-[#f97316] mt-auto">{formatRp(item.price)}</p>
+                          <p className="text-base font-black text-indigo-500 mt-auto">{formatRp(item.price)}</p>
                         )}
                       </div>
                     </div>
 
                     {isSelected && typeof item.price === 'object' && (
-                      <div className="p-4 sm:p-5 pt-4 border-t border-orange-200 bg-orange-50/50">
-                        <p className="text-xs font-black text-orange-600 uppercase tracking-widest mb-3 pl-1">Pilih Ukuran:</p>
+                      <div className="p-4 sm:p-5 pt-4 border-t border-indigo-200 bg-indigo-50/50">
+                        <p className="text-xs font-black text-indigo-600 uppercase tracking-widest mb-3 pl-1">Pilih Ukuran:</p>
                         <select 
                           value={carSize} 
                           onChange={e => {
@@ -660,7 +741,7 @@ function KasirView({ services, customServices, setCustomServices, setOrders, for
                             }, 50);
                           }} 
                           onClick={e => e.stopPropagation()}
-                          className="w-full text-base p-4 border border-orange-300 rounded-xl bg-white text-orange-800 font-black outline-none appearance-none cursor-pointer shadow-sm"
+                          className="w-full text-base p-4 border border-indigo-300 rounded-xl bg-white text-indigo-800 font-black outline-none appearance-none cursor-pointer shadow-sm"
                         >
                           <option value="Kecil">Mobil Kecil - {formatRp(item.price.Kecil)}</option>
                           <option value="Besar">Mobil Besar - {formatRp(item.price.Besar)}</option>
@@ -679,20 +760,24 @@ function KasirView({ services, customServices, setCustomServices, setOrders, for
             <Plus size={20}/> Tambah Layanan Khusus
           </button>
         ) : (
-          <div className="bg-orange-50 p-6 rounded-[2rem] border border-orange-200 space-y-4 shadow-inner">
+          <div className="bg-indigo-50 p-6 rounded-[2rem] border border-indigo-200 space-y-4 shadow-inner">
              <div className="flex justify-between items-center px-1">
-                <span className="text-base font-black text-orange-800">Layanan Baru</span>
-                <button onClick={() => setShowCustomForm(false)} className="bg-orange-100 p-2 rounded-full text-orange-500"><X size={20}/></button>
+                <span className="text-base font-black text-indigo-800">Layanan Baru</span>
+                <button onClick={() => setShowCustomForm(false)} className="bg-indigo-100 p-2 rounded-full text-indigo-500"><X size={20}/></button>
              </div>
-             <input type="text" placeholder="Nama Layanan (Misa: Poles Kaca)" value={customName} onChange={e => setCustomName(e.target.value)} className="w-full p-4 rounded-2xl text-base font-bold bg-white border border-orange-100 outline-none focus:ring-2 focus:ring-orange-400"/>
-             <input type="number" placeholder="Harga (Rp)" value={customPrice} onChange={e => setCustomPrice(e.target.value)} className="w-full p-4 rounded-2xl text-base font-bold bg-white border border-orange-100 outline-none focus:ring-2 focus:ring-orange-400"/>
+             <input type="text" placeholder="Nama Layanan (Misa: Poles Kaca)" value={customName} onChange={e => setCustomName(e.target.value)} className="w-full p-4 rounded-2xl text-base font-bold bg-white border border-indigo-100 outline-none focus:ring-2 focus:ring-indigo-400"/>
+             <input type="number" placeholder="Harga (Rp)" value={customPrice} onChange={e => setCustomPrice(e.target.value)} className="w-full p-4 rounded-2xl text-base font-bold bg-white border border-indigo-100 outline-none focus:ring-2 focus:ring-indigo-400"/>
              <button onClick={() => {
                 if(!customName || !customPrice) return;
                 const ns = { id: Date.now(), name: customName, price: parseInt(customPrice), category: 'Layanan Custom' };
+                // Panggil fungsi sinkronisasi Cloud 
+                saveCustomServiceToDb(ns);
+                
+                // Tambahkan langsung ke UI sementara
                 setCustomServices([...customServices, ns]);
                 setSelectedItems([...selectedItems, ns]);
                 setCustomName(''); setCustomPrice(''); setShowCustomForm(false);
-             }} className="w-full bg-[#f97316] hover:bg-orange-600 text-white font-black py-4 rounded-2xl text-sm shadow-xl shadow-orange-200/50 active:scale-95 transition-transform mt-2">Simpan ke Daftar</button>
+             }} className="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-black py-4 rounded-2xl text-sm shadow-xl shadow-indigo-200/50 active:scale-95 transition-transform mt-2">Simpan ke Daftar</button>
           </div>
         )}
       </div>
@@ -763,9 +848,9 @@ function KalenderView({ orders, formatRp, setActiveNota }) {
             const hasOrder = monthOrders.some(o => o.date === dateStr);
 
             return (
-              <div key={day} onClick={() => handleDateClick(day)} className={`aspect-square flex flex-col items-center justify-center rounded-full cursor-pointer transition-all ${isSel ? 'bg-[#f97316] text-white shadow-lg shadow-orange-200 scale-110' : 'text-slate-600 hover:bg-slate-50'}`}>
+              <div key={day} onClick={() => handleDateClick(day)} className={`aspect-square flex flex-col items-center justify-center rounded-full cursor-pointer transition-all ${isSel ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-200 scale-110' : 'text-slate-600 hover:bg-slate-50'}`}>
                 <span className="text-sm font-bold leading-none">{day}</span>
-                {hasOrder && <div className={`w-1.5 h-1.5 rounded-full mt-1 ${isSel ? 'bg-white' : 'bg-orange-500'}`}></div>}
+                {hasOrder && <div className={`w-1.5 h-1.5 rounded-full mt-1 ${isSel ? 'bg-white' : 'bg-indigo-500'}`}></div>}
               </div>
             );
           })}
@@ -775,11 +860,11 @@ function KalenderView({ orders, formatRp, setActiveNota }) {
       <div>
         <div className="flex justify-between items-center mb-4 px-2">
           <h3 className="font-black text-sm text-slate-800 flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-[#f97316]"></div>
+            <div className="w-2 h-2 rounded-full bg-indigo-500"></div>
             {selectedDate ? `Jadwal: ${selectedDate.getDate()} ${monthNames[selectedDate.getMonth()]}` : `Semua Jadwal Bulan Ini`}
           </h3>
           {selectedDate && (
-            <button onClick={() => setSelectedDate(null)} className="text-[10px] font-bold text-orange-600 bg-orange-50 px-3 py-1.5 rounded-xl uppercase tracking-widest">
+            <button onClick={() => setSelectedDate(null)} className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-xl uppercase tracking-widest">
               Lihat Semua
             </button>
           )}
@@ -795,11 +880,11 @@ function KalenderView({ orders, formatRp, setActiveNota }) {
             const hasUrlInAddress = o.address && o.address.match(/(https?:\/\/[^\s]+)/g);
             return (
               <div key={o.id} className="bg-white p-5 rounded-[2rem] border border-slate-100 flex gap-4 items-center shadow-sm relative overflow-hidden">
-                <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${o.status === 'Lunas' ? 'bg-green-500' : 'bg-orange-500'}`}/>
+                <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${o.status === 'Lunas' ? 'bg-green-500' : 'bg-amber-500'}`}/>
                 
                 <div className="text-center border-r pr-4 sm:pr-5 border-slate-100 min-w-[90px] flex flex-col justify-center pl-2">
                   <p className="text-3xl font-black text-slate-900 tracking-tighter leading-none mb-1.5">{(o.date || '').substring(0, 5)}</p>
-                  <p className="text-xs font-bold text-[#f97316]">{o.time || '-'}</p>
+                  <p className="text-xs font-bold text-indigo-500">{o.time || '-'}</p>
                 </div>
                 
                 <div className="flex-1 min-w-0">
@@ -813,7 +898,7 @@ function KalenderView({ orders, formatRp, setActiveNota }) {
                         window.open(getMapLink(o.address), '_blank');
                       } 
                     }}
-                    className="text-xs font-medium text-slate-400 mt-2 flex items-start gap-1.5 leading-snug cursor-pointer hover:text-orange-500 transition-colors"
+                    className="text-xs font-medium text-slate-400 mt-2 flex items-start gap-1.5 leading-snug cursor-pointer hover:text-indigo-500 transition-colors"
                   >
                     <MapPin size={14} className="shrink-0 mt-0.5"/> 
                     <span className="line-clamp-2 underline decoration-dashed underline-offset-4 decoration-slate-300">
@@ -821,7 +906,7 @@ function KalenderView({ orders, formatRp, setActiveNota }) {
                     </span>
                   </p>
                 </div>
-                <button onClick={() => setActiveNota(o)} className="p-3 bg-slate-50 hover:bg-orange-50 text-slate-400 hover:text-orange-600 rounded-xl transition-colors"><Printer size={20}/></button>
+                <button onClick={() => setActiveNota(o)} className="p-3 bg-slate-50 hover:bg-indigo-50 text-slate-400 hover:text-indigo-600 rounded-xl transition-colors"><Printer size={20}/></button>
               </div>
             );
           })}
@@ -832,7 +917,7 @@ function KalenderView({ orders, formatRp, setActiveNota }) {
 }
 
 // --- VIEW: RIWAYAT PESANAN ---
-function RiwayatView({ orders, setOrders, formatRp, setActiveNota, showConfirm, setEditingOrder, setActiveTab }) {
+function RiwayatView({ orders, saveOrderToDb, formatRp, setActiveNota, showConfirm, setEditingOrder, setActiveTab }) {
   const [search, setSearch] = useState('');
   
   const filtered = orders.filter(o => {
@@ -857,14 +942,14 @@ function RiwayatView({ orders, setOrders, formatRp, setActiveNota, showConfirm, 
             const hasUrlInAddress = order.address && order.address.match(/(https?:\/\/[^\s]+)/g);
             return (
               <div key={order.id} className="bg-white rounded-[2rem] p-5 sm:p-6 shadow-sm border border-slate-100 relative overflow-hidden flex flex-col gap-4">
-                <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${order.status === 'Lunas' ? 'bg-green-500' : 'bg-orange-500'}`}/>
+                <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${order.status === 'Lunas' ? 'bg-green-500' : 'bg-amber-500'}`}/>
                 
                 <div className="flex justify-between items-start pl-2">
                   <div className="pr-3">
                     <h4 className="font-black text-slate-800 text-xl sm:text-2xl tracking-tight mb-1">{order.plate || '-'}</h4>
                     <p className="text-xs font-medium text-slate-500">{order.customerName || '-'} • {order.customerPhone || '-'}</p>
                   </div>
-                  <span className={`text-[10px] px-3 py-1.5 rounded-xl font-bold uppercase tracking-wider shrink-0 ${order.status === 'Lunas' ? 'bg-green-50 text-green-600' : 'bg-orange-50 text-orange-600'}`}>
+                  <span className={`text-[10px] px-3 py-1.5 rounded-xl font-bold uppercase tracking-wider shrink-0 ${order.status === 'Lunas' ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-600'}`}>
                     {order.status}
                   </span>
                 </div>
@@ -877,7 +962,7 @@ function RiwayatView({ orders, setOrders, formatRp, setActiveNota, showConfirm, 
                         window.open(getMapLink(order.address), '_blank');
                       } 
                     }}
-                    className="text-xs font-medium text-slate-500 flex items-start gap-1.5 cursor-pointer hover:text-orange-500 transition-colors"
+                    className="text-xs font-medium text-slate-500 flex items-start gap-1.5 cursor-pointer hover:text-indigo-500 transition-colors"
                   >
                     <MapPin size={14} className="shrink-0 mt-0.5 text-slate-400"/> 
                     <span className="line-clamp-2 underline decoration-dashed underline-offset-4 decoration-slate-300">
@@ -909,7 +994,7 @@ function RiwayatView({ orders, setOrders, formatRp, setActiveNota, showConfirm, 
                     <button onClick={() => { setEditingOrder(order); setActiveTab('kasir'); }} className="p-3 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-xl transition-colors shadow-sm"><Edit size={18}/></button>
                     <button onClick={() => setActiveNota(order)} className="p-3 bg-slate-50 hover:bg-slate-100 text-slate-500 rounded-xl transition-colors shadow-sm"><Printer size={18}/></button>
                     {order.status !== 'Lunas' && (
-                      <button onClick={() => showConfirm(`Konfirmasi Lunas untuk ${formatRp(order.total)}?`, () => setOrders(prev => prev.map(o => o.id === order.id ? {...o, status: 'Lunas'} : o)))} className="bg-green-500 hover:bg-green-600 text-white text-xs font-bold px-5 py-3 rounded-xl shadow-md shadow-green-200 active:scale-95 transition-transform">LUNAS</button>
+                      <button onClick={() => showConfirm(`Konfirmasi Lunas untuk ${formatRp(order.total)}?`, () => saveOrderToDb({...order, status: 'Lunas'}))} className="bg-green-500 hover:bg-green-600 text-white text-xs font-bold px-5 py-3 rounded-xl shadow-md shadow-green-200 active:scale-95 transition-transform">LUNAS</button>
                     )}
                   </div>
                 </div>
@@ -1009,7 +1094,7 @@ function LaporanView({ orders, formatRp, showAlert }) {
         head: [tableColumn],
         body: tableRows,
         theme: 'grid',
-        headStyles: { fillColor: [249, 115, 22] },
+        headStyles: { fillColor: [99, 102, 241] }, // Warna indigo-500
         foot: [["", "", "", "TOTAL PENDAPATAN", formatRp(totalMonthRevenue)]],
         footStyles: { fillColor: [241, 245, 249], textColor: [0, 0, 0], fontStyle: 'bold' },
         styles: { fontSize: 9 }
@@ -1033,7 +1118,7 @@ function LaporanView({ orders, formatRp, showAlert }) {
           type="month" 
           value={filterMonth} 
           onChange={e => setFilterMonth(e.target.value)} 
-          className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-bold outline-none focus:ring-2 focus:ring-orange-500 text-slate-700"
+          className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-500 text-slate-700"
         />
       </div>
 
@@ -1041,7 +1126,7 @@ function LaporanView({ orders, formatRp, showAlert }) {
         <Wallet className="absolute -right-6 -top-6 w-40 h-40 text-white/5 rotate-12" />
         <div className="relative z-10">
           <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em] mb-2">Total Pendapatan</p>
-          <h3 className="text-4xl font-black tracking-tighter truncate text-orange-400">{formatRp(totalMonthRevenue)}</h3>
+          <h3 className="text-4xl font-black tracking-tighter truncate text-indigo-400">{formatRp(totalMonthRevenue)}</h3>
           <p className="text-xs text-slate-300 font-medium mt-2 flex items-center gap-1">
             <CheckCircle size={14} className="text-green-400"/> Dari {monthCompleted.length} transaksi selesai
           </p>
@@ -1049,13 +1134,13 @@ function LaporanView({ orders, formatRp, showAlert }) {
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        <div className="bg-orange-50 p-6 rounded-[2rem] border border-orange-100 flex flex-col justify-center">
+        <div className="bg-indigo-50 p-6 rounded-[2rem] border border-indigo-100 flex flex-col justify-center">
           <div className="flex items-center gap-2 mb-3">
-            <div className="p-1.5 bg-orange-200 rounded-full text-orange-600"><Clock size={16} /></div>
-            <p className="text-[10px] font-black text-orange-600 uppercase tracking-widest">Antrian</p>
+            <div className="p-1.5 bg-indigo-200 rounded-full text-indigo-600"><Clock size={16} /></div>
+            <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">Antrian</p>
           </div>
-          <p className="text-4xl font-black text-orange-600">{monthPending.length}</p>
-          <p className="text-[10px] font-bold text-orange-400 mt-1 uppercase tracking-wider">Unit Diproses</p>
+          <p className="text-4xl font-black text-indigo-600">{monthPending.length}</p>
+          <p className="text-[10px] font-bold text-indigo-400 mt-1 uppercase tracking-wider">Unit Diproses</p>
         </div>
         
         <div className="bg-green-50 p-6 rounded-[2rem] border border-green-100 flex flex-col justify-center">
@@ -1089,10 +1174,10 @@ function LaporanView({ orders, formatRp, showAlert }) {
                 <div key={idx} className="relative">
                   <div className="flex justify-between items-end text-xs font-bold mb-1.5">
                     <span className="text-slate-700 truncate pr-4">{srv.name}</span>
-                    <span className="text-orange-600 bg-orange-50 px-2 py-0.5 rounded shadow-sm">{srv.count} unit</span>
+                    <span className="text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded shadow-sm">{srv.count} unit</span>
                   </div>
                   <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
-                    <div className="bg-gradient-to-r from-orange-400 to-orange-500 h-full rounded-full transition-all duration-1000" style={{ width: `${percentage}%` }}></div>
+                    <div className="bg-gradient-to-r from-indigo-400 to-indigo-500 h-full rounded-full transition-all duration-1000" style={{ width: `${percentage}%` }}></div>
                   </div>
                 </div>
               );
@@ -1198,7 +1283,7 @@ function NotaModal({ order, formatRp, onClose, showAlert }) {
             <div id="nota-capture-area" className="bg-white">
               <div className="bg-slate-50 p-8 text-center relative border-b border-dashed border-slate-200">
                 <button onClick={onClose} className="absolute right-6 top-6 text-slate-400 hover:text-slate-600 print:hidden"><X size={24}/></button>
-                <div className="w-16 h-16 bg-blue-600 text-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-xl shadow-blue-200"><Receipt size={32}/></div>
+                <div className="w-16 h-16 bg-indigo-500 text-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-xl shadow-indigo-200"><Receipt size={32}/></div>
                 <h2 className="font-black text-slate-800 text-xl tracking-tighter">{APP_NAME_LINE1} {APP_NAME_LINE2.replace('&', '')}</h2>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{APP_SUBTITLE}</p>
               </div>
@@ -1206,7 +1291,7 @@ function NotaModal({ order, formatRp, onClose, showAlert }) {
               <div className="p-8 text-xs space-y-6">
                 <div className="flex justify-between border-b border-dashed border-slate-100 pb-4">
                    <span className="font-black text-slate-400 uppercase tracking-widest">{order.date || '-'}</span>
-                   <span className="font-black text-[#f97316] tracking-widest">{order.id || '-'}</span>
+                   <span className="font-black text-indigo-500 tracking-widest">{order.id || '-'}</span>
                 </div>
                 
                 <div>
@@ -1219,7 +1304,7 @@ function NotaModal({ order, formatRp, onClose, showAlert }) {
                         window.open(getMapLink(order.address), '_blank');
                       }
                     }}
-                    className="text-slate-500 font-medium text-[10px] mt-1.5 leading-relaxed flex items-start gap-1 cursor-pointer hover:text-orange-500"
+                    className="text-slate-500 font-medium text-[10px] mt-1.5 leading-relaxed flex items-start gap-1 cursor-pointer hover:text-indigo-500"
                   >
                      <MapPin size={12} className="shrink-0" /> 
                      <span className="underline decoration-dashed underline-offset-2">
@@ -1239,7 +1324,7 @@ function NotaModal({ order, formatRp, onClose, showAlert }) {
 
                 <div className="flex justify-between items-center text-2xl font-black pt-2 pb-2">
                   <span className="text-slate-800 tracking-tighter">TOTAL</span>
-                  <span className="text-[#f97316] truncate max-w-[60%] text-right">{formatRp(order.total)}</span>
+                  <span className="text-indigo-500 truncate max-w-[60%] text-right">{formatRp(order.total)}</span>
                 </div>
               </div>
             </div>
@@ -1249,7 +1334,7 @@ function NotaModal({ order, formatRp, onClose, showAlert }) {
               <button onClick={handleShareProcess} className="flex-1 py-4 rounded-2xl font-black uppercase tracking-widest bg-green-500 text-white shadow-xl shadow-green-200 text-[10px] flex items-center justify-center gap-1.5 active:scale-95 transition-transform">
                 <Share2 size={16}/> Share
               </button>
-              <button onClick={() => showAlert('Mencetak struk thermal...')} className="flex-1 py-4 rounded-2xl font-black uppercase tracking-widest bg-[#f97316] text-white shadow-xl shadow-orange-200 text-[10px] flex items-center justify-center gap-1.5 active:scale-95 transition-transform">
+              <button onClick={() => showAlert('Mencetak struk thermal...')} className="flex-1 py-4 rounded-2xl font-black uppercase tracking-widest bg-indigo-500 text-white shadow-xl shadow-indigo-200 text-[10px] flex items-center justify-center gap-1.5 active:scale-95 transition-transform">
                 <Printer size={16}/> Cetak
               </button>
             </div>
