@@ -27,27 +27,11 @@ import {
   Map,
   Navigation,
   Flame,
-  TrendingUp,
-  Loader2
+  TrendingUp
 } from 'lucide-react';
 
-// --- FIREBASE CLOUD STORAGE SETUP ---
-import { initializeApp } from 'firebase/app';
-import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
-import { getFirestore, collection, onSnapshot, doc, setDoc } from 'firebase/firestore';
-
-let app, auth, db, appId;
-try {
-  const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-  app = initializeApp(firebaseConfig);
-  auth = getAuth(app);
-  db = getFirestore(app);
-  appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-} catch (error) {
-  console.error("Firebase init error", error);
-}
-
 // --- PENGATURAN HEADER & LOGO ---
+// Bos bisa mengganti logo, nama usaha, dan sub-teksnya di sini:
 const APP_LOGO = 'https://images.unsplash.com/photo-1777407265534-248433dc692c?q=80&w=880&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'; 
 const APP_NAME_LINE1 = 'Carwash & Detailing';       
 const APP_NAME_LINE2 = '';     
@@ -87,85 +71,32 @@ export default function App() {
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
   const [editingOrder, setEditingOrder] = useState(null);
   
-  // CLOUD STATE
-  const [user, setUser] = useState(null);
-  const [isDbReady, setIsDbReady] = useState(false);
-  const [orders, setOrders] = useState([]);
-  const [customServices, setCustomServices] = useState([]);
-
-  // 1. Inisialisasi Otentikasi Cloud
-  useEffect(() => {
-    if (!auth) return;
-    const initAuth = async () => {
-      try {
-        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-          await signInWithCustomToken(auth, __initial_auth_token);
-        } else {
-          await signInAnonymously(auth);
-        }
-      } catch (error) {
-        console.error("Auth error", error);
-      }
-    };
-    initAuth();
-    const unsubscribe = onAuthStateChanged(auth, setUser);
-    return () => unsubscribe();
-  }, []);
-
-  // 2. Sinkronisasi Data Real-time (Cloud Listener)
-  useEffect(() => {
-    if (!user || !db) return;
-
-    // Mendengarkan perubahan data pesanan secara real-time
-    const ordersRef = collection(db, 'artifacts', appId, 'public', 'data', 'orders');
-    const unsubOrders = onSnapshot(ordersRef, (snapshot) => {
-      const data = [];
-      snapshot.forEach(doc => data.push({ ...doc.data(), id: doc.id }));
-      // Urutkan pesanan dari yang paling baru
-      data.sort((a, b) => b.id.localeCompare(a.id)); 
-      setOrders(data);
-      setIsDbReady(true);
-    }, (error) => {
-      console.error("Gagal sinkronisasi orders", error);
-    });
-
-    // Mendengarkan perubahan layanan kustom secara real-time
-    const csRef = collection(db, 'artifacts', appId, 'public', 'data', 'customServices');
-    const unsubCs = onSnapshot(csRef, (snapshot) => {
-      const data = [];
-      snapshot.forEach(doc => data.push({ ...doc.data(), id: doc.id }));
-      setCustomServices(data);
-    }, (error) => {
-      console.error("Gagal sinkronisasi custom services", error);
-    });
-
-    return () => {
-      unsubOrders();
-      unsubCs();
-    };
-  }, [user]);
-
-  // Fungsi Mutasi ke Cloud Storage
-  const saveOrderToDb = async (orderData) => {
-    if (!db || !user) return;
+  // STATE PENYIMPANAN LOCAL (AMAN UNTUK VERCEL)
+  const [customServices, setCustomServices] = useState(() => {
     try {
-      const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'orders', orderData.id);
-      await setDoc(docRef, orderData);
-    } catch (error) {
-      console.error("Gagal menyimpan order", error);
-      showAlert("Gagal menyimpan ke Cloud. Periksa koneksi internet.");
-    }
-  };
-
-  const saveCustomServiceToDb = async (serviceData) => {
-    if (!db || !user) return;
+      const saved = localStorage.getItem('l_carwash_custom_services');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) { return []; }
+  }); 
+  
+  const [orders, setOrders] = useState(() => {
     try {
-      const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'customServices', serviceData.id.toString());
-      await setDoc(docRef, serviceData);
-    } catch (error) {
-      console.error("Gagal menyimpan layanan", error);
-    }
-  };
+      const saved = localStorage.getItem('l_carwash_orders');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) { return []; }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('l_carwash_orders', JSON.stringify(orders));
+    } catch (e) {}
+  }, [orders]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('l_carwash_custom_services', JSON.stringify(customServices));
+    } catch (e) {}
+  }, [customServices]);
 
   useEffect(() => {
     const metaThemeColor = document.querySelector("meta[name=theme-color]");
@@ -214,16 +145,6 @@ export default function App() {
   const showAlert = (message) => setDialog({ type: 'alert', message });
   const showConfirm = (message, onConfirm) => setDialog({ type: 'confirm', message, onConfirm });
 
-  // Tampilan Loading Awal saat mengambil data dari Cloud
-  if (!isDbReady) {
-    return (
-      <div className="min-h-[100dvh] w-full flex flex-col items-center justify-center bg-slate-50 text-indigo-500 font-sans">
-        <Loader2 className="animate-spin mb-4" size={40} />
-        <p className="font-bold tracking-widest text-xs uppercase animate-pulse">Menghubungkan ke Cloud...</p>
-      </div>
-    );
-  }
-
   return (
     <div className="bg-slate-50 text-slate-800 w-full min-h-[100dvh] relative overflow-x-hidden flex flex-col font-sans">
       <style dangerouslySetInnerHTML={{__html: `
@@ -258,8 +179,7 @@ export default function App() {
                 </div>
               </div>
               <div className="bg-white/10 p-2 rounded-xl border border-white/20 backdrop-blur-md shadow-sm shrink-0 flex items-center gap-1.5">
-                <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></div>
-                <span className="text-[8px] font-bold text-white uppercase tracking-widest hidden sm:block">Cloud Sync</span>
+                <User size={18} className="text-white"/>
               </div>
             </div>
           </div>
@@ -268,10 +188,10 @@ export default function App() {
 
       {/* CONTENT AREA */}
       <div className={`flex-1 overflow-y-auto hide-scrollbar ${activeTab === 'peta' ? 'px-0 pt-0 pb-32' : 'px-4 sm:px-5'} ${activeTab === 'kasir' ? 'pb-[260px]' : (activeTab !== 'peta' ? 'pb-32' : '')} ${activeTab !== 'kasir' && activeTab !== 'peta' ? 'pt-8' : 'pt-5'} w-full relative`}>
-        {activeTab === 'kasir' && <KasirView services={SERVICES} customServices={customServices} saveCustomServiceToDb={saveCustomServiceToDb} saveOrderToDb={saveOrderToDb} formatRp={formatRp} setActiveTab={setActiveTab} setActiveNota={setActiveNota} showAlert={showAlert} isKeyboardOpen={isKeyboardOpen} editingOrder={editingOrder} setEditingOrder={setEditingOrder} />}
+        {activeTab === 'kasir' && <KasirView services={SERVICES} customServices={customServices} setCustomServices={setCustomServices} setOrders={setOrders} formatRp={formatRp} setActiveTab={setActiveTab} setActiveNota={setActiveNota} showAlert={showAlert} isKeyboardOpen={isKeyboardOpen} editingOrder={editingOrder} setEditingOrder={setEditingOrder} />}
         {activeTab === 'peta' && <PetaView orders={orders} formatRp={formatRp} setActiveNota={setActiveNota} />}
         {activeTab === 'kalender' && <KalenderView orders={orders} formatRp={formatRp} setActiveNota={setActiveNota} />}
-        {activeTab === 'riwayat' && <RiwayatView orders={orders} saveOrderToDb={saveOrderToDb} formatRp={formatRp} setActiveNota={setActiveNota} showAlert={showAlert} showConfirm={showConfirm} setEditingOrder={setEditingOrder} setActiveTab={setActiveTab} />}
+        {activeTab === 'riwayat' && <RiwayatView orders={orders} setOrders={setOrders} formatRp={formatRp} setActiveNota={setActiveNota} showAlert={showAlert} showConfirm={showConfirm} setEditingOrder={setEditingOrder} setActiveTab={setActiveTab} />}
         {activeTab === 'laporan' && <LaporanView orders={orders} formatRp={formatRp} showAlert={showAlert} />}
       </div>
 
@@ -459,7 +379,7 @@ function PetaView({ orders, formatRp, setActiveNota }) {
 }
 
 // --- VIEW: KASIR ---
-function KasirView({ services, customServices, saveCustomServiceToDb, saveOrderToDb, formatRp, setActiveTab, setActiveNota, showAlert, isKeyboardOpen, editingOrder, setEditingOrder }) {
+function KasirView({ services, customServices, setCustomServices, setOrders, formatRp, setActiveTab, setActiveNota, showAlert, isKeyboardOpen, editingOrder, setEditingOrder }) {
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [address, setAddress] = useState('');
@@ -557,11 +477,11 @@ function KasirView({ services, customServices, saveCustomServiceToDb, saveOrderT
       status: editingOrder ? editingOrder.status : 'Belum Lunas'
     };
 
-    // Panggil fungsi Cloud Storage
-    saveOrderToDb(newOrder);
-    
     if (editingOrder) {
+      setOrders(prev => prev.map(o => o.id === editingOrder.id ? newOrder : o));
       setEditingOrder(null); 
+    } else {
+      setOrders(prev => [newOrder, ...prev]);
     }
     
     setActiveTab('riwayat');
@@ -770,10 +690,7 @@ function KasirView({ services, customServices, saveCustomServiceToDb, saveOrderT
              <button onClick={() => {
                 if(!customName || !customPrice) return;
                 const ns = { id: Date.now(), name: customName, price: parseInt(customPrice), category: 'Layanan Custom' };
-                // Panggil fungsi sinkronisasi Cloud 
-                saveCustomServiceToDb(ns);
                 
-                // Tambahkan langsung ke UI sementara
                 setCustomServices([...customServices, ns]);
                 setSelectedItems([...selectedItems, ns]);
                 setCustomName(''); setCustomPrice(''); setShowCustomForm(false);
@@ -880,7 +797,7 @@ function KalenderView({ orders, formatRp, setActiveNota }) {
             const hasUrlInAddress = o.address && o.address.match(/(https?:\/\/[^\s]+)/g);
             return (
               <div key={o.id} className="bg-white p-5 rounded-[2rem] border border-slate-100 flex gap-4 items-center shadow-sm relative overflow-hidden">
-                <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${o.status === 'Lunas' ? 'bg-green-500' : 'bg-amber-500'}`}/>
+                <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${o.status === 'Lunas' ? 'bg-green-500' : 'bg-orange-500'}`}/>
                 
                 <div className="text-center border-r pr-4 sm:pr-5 border-slate-100 min-w-[90px] flex flex-col justify-center pl-2">
                   <p className="text-3xl font-black text-slate-900 tracking-tighter leading-none mb-1.5">{(o.date || '').substring(0, 5)}</p>
@@ -917,7 +834,7 @@ function KalenderView({ orders, formatRp, setActiveNota }) {
 }
 
 // --- VIEW: RIWAYAT PESANAN ---
-function RiwayatView({ orders, saveOrderToDb, formatRp, setActiveNota, showConfirm, setEditingOrder, setActiveTab }) {
+function RiwayatView({ orders, setOrders, formatRp, setActiveNota, showConfirm, setEditingOrder, setActiveTab }) {
   const [search, setSearch] = useState('');
   
   const filtered = orders.filter(o => {
@@ -942,14 +859,14 @@ function RiwayatView({ orders, saveOrderToDb, formatRp, setActiveNota, showConfi
             const hasUrlInAddress = order.address && order.address.match(/(https?:\/\/[^\s]+)/g);
             return (
               <div key={order.id} className="bg-white rounded-[2rem] p-5 sm:p-6 shadow-sm border border-slate-100 relative overflow-hidden flex flex-col gap-4">
-                <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${order.status === 'Lunas' ? 'bg-green-500' : 'bg-amber-500'}`}/>
+                <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${order.status === 'Lunas' ? 'bg-green-500' : 'bg-orange-500'}`}/>
                 
                 <div className="flex justify-between items-start pl-2">
                   <div className="pr-3">
                     <h4 className="font-black text-slate-800 text-xl sm:text-2xl tracking-tight mb-1">{order.plate || '-'}</h4>
                     <p className="text-xs font-medium text-slate-500">{order.customerName || '-'} • {order.customerPhone || '-'}</p>
                   </div>
-                  <span className={`text-[10px] px-3 py-1.5 rounded-xl font-bold uppercase tracking-wider shrink-0 ${order.status === 'Lunas' ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-600'}`}>
+                  <span className={`text-[10px] px-3 py-1.5 rounded-xl font-bold uppercase tracking-wider shrink-0 ${order.status === 'Lunas' ? 'bg-green-50 text-green-600' : 'bg-orange-50 text-orange-600'}`}>
                     {order.status}
                   </span>
                 </div>
@@ -994,7 +911,7 @@ function RiwayatView({ orders, saveOrderToDb, formatRp, setActiveNota, showConfi
                     <button onClick={() => { setEditingOrder(order); setActiveTab('kasir'); }} className="p-3 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-xl transition-colors shadow-sm"><Edit size={18}/></button>
                     <button onClick={() => setActiveNota(order)} className="p-3 bg-slate-50 hover:bg-slate-100 text-slate-500 rounded-xl transition-colors shadow-sm"><Printer size={18}/></button>
                     {order.status !== 'Lunas' && (
-                      <button onClick={() => showConfirm(`Konfirmasi Lunas untuk ${formatRp(order.total)}?`, () => saveOrderToDb({...order, status: 'Lunas'}))} className="bg-green-500 hover:bg-green-600 text-white text-xs font-bold px-5 py-3 rounded-xl shadow-md shadow-green-200 active:scale-95 transition-transform">LUNAS</button>
+                      <button onClick={() => showConfirm(`Konfirmasi Lunas untuk ${formatRp(order.total)}?`, () => setOrders(prev => prev.map(o => o.id === order.id ? {...o, status: 'Lunas'} : o)))} className="bg-green-500 hover:bg-green-600 text-white text-xs font-bold px-5 py-3 rounded-xl shadow-md shadow-green-200 active:scale-95 transition-transform">LUNAS</button>
                     )}
                   </div>
                 </div>
@@ -1094,7 +1011,7 @@ function LaporanView({ orders, formatRp, showAlert }) {
         head: [tableColumn],
         body: tableRows,
         theme: 'grid',
-        headStyles: { fillColor: [99, 102, 241] }, // Warna indigo-500
+        headStyles: { fillColor: [99, 102, 241] }, 
         foot: [["", "", "", "TOTAL PENDAPATAN", formatRp(totalMonthRevenue)]],
         footStyles: { fillColor: [241, 245, 249], textColor: [0, 0, 0], fontStyle: 'bold' },
         styles: { fontSize: 9 }
@@ -1134,13 +1051,13 @@ function LaporanView({ orders, formatRp, showAlert }) {
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        <div className="bg-indigo-50 p-6 rounded-[2rem] border border-indigo-100 flex flex-col justify-center">
+        <div className="bg-orange-50 p-6 rounded-[2rem] border border-orange-100 flex flex-col justify-center">
           <div className="flex items-center gap-2 mb-3">
-            <div className="p-1.5 bg-indigo-200 rounded-full text-indigo-600"><Clock size={16} /></div>
-            <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">Antrian</p>
+            <div className="p-1.5 bg-orange-200 rounded-full text-orange-600"><Clock size={16} /></div>
+            <p className="text-[10px] font-black text-orange-600 uppercase tracking-widest">Antrian</p>
           </div>
-          <p className="text-4xl font-black text-indigo-600">{monthPending.length}</p>
-          <p className="text-[10px] font-bold text-indigo-400 mt-1 uppercase tracking-wider">Unit Diproses</p>
+          <p className="text-4xl font-black text-orange-600">{monthPending.length}</p>
+          <p className="text-[10px] font-bold text-orange-400 mt-1 uppercase tracking-wider">Unit Diproses</p>
         </div>
         
         <div className="bg-green-50 p-6 rounded-[2rem] border border-green-100 flex flex-col justify-center">
